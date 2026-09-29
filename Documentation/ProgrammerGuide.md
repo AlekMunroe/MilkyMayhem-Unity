@@ -1,0 +1,144 @@
+# Milky Mayhem Programmer Guide
+
+## Purpose
+
+This guide describes the current code structure and the responsibilities of each system. Read [PlayerSetup.md](PlayerSetup.md) before rebuilding or changing the player hierarchy.
+
+## Current Architecture
+
+```text
+Keyboard and mouse
+        |
+        +--> PlayerController ------> CharacterController movement
+        |          |
+        |          +---------------> SprintStaminaPercent
+        |                                  |
+        |                                  v
+        |                           PlayerUIController
+        |                                  |
+        |                                  v
+        |                              UI Slider
+        |
+        +--> CameraController ------> Player yaw and camera pitch
+        |-!
+Future WorldController -----------> Pause, input locks and shared state
+```
+
+The current scripts read devices directly through `Keyboard.current` and `Mouse.current`. There is no Input Actions asset or central input wrapper yet however, this is to be implemented in the future.
+
+## PlayerController
+
+**Path:** `Assets/Scripts/Player/PlayerController.cs`
+
+**Responsibility:** Controls the entire first person player with movement and animation
+
+Implemented features:
+
+- WASD movement through a `CharacterController`
+- Sprinting with stamina drain, a regeneration delay and regeneration over time
+- Parkour jump with a slight forward boost
+- Coyote time (a short time for the player to jump after leaving the platform), jump buffering and variable jump height
+- Wall detection on all four sides
+- Temporary wall clinging, wall sliding and wall jumping
+- Ground sliding with a reduced controller height
+- Visual scaling during a slide
+- Legacy slide and reset animation playback
+
+Important public API:
+
+```csharp
+public float SprintStaminaPercent
+```
+
+This value is normalized between 0 and 1 and is currently used by the `PlayerUIController`.
+
+Important dependencies:
+
+- `CharacterController` on the same GameObject
+- A `GroundCheck` child Transform
+- Ground and Wall layer masks
+- A child Transform assigned to `Player Visuals`
+- A Legacy `Animation` component
+- Legacy slide and reset clips
+
+## CameraController
+
+**Path:** `Assets/Scripts/Player/CameraController.cs`
+
+**Responsibility:** To rotate the player object horizontally and the camera object vertically.
+
+Required reference:
+
+- `Cam Object`: A parent object inside the main player object with a camera component.
+```text 
+Player object (PlayerController.cs)
+|
+V
+Camera object
+|
+V
+Camera (CameraController.cs, camera component)
+```
+
+The vertical angle is clamped using `Max Look Angle` to limit how far the player can look without acting "unnatural". 
+
+Locking the cursor and pausing the game are purposely not managed here. They are planned for the script `WorldController.cs`
+
+## PlayerUIController
+
+**Path:** `Assets/Scripts/UI/Gameplay/PlayerUIController.cs`
+
+**Responsibility:** Update the player related UI elements.
+
+It currently reads `PlayerController.SprintStaminaPercent` each frame and assigns it to the sprint `Slider` value.
+
+Required references:
+
+- `Player Controller`: the scene's `PlayerController`
+- `Sprint Slider`: the UI Slider used to display stamina
+
+Future player HUD elements such as health or interaction prompts can be added here. Pause menus, settings and end-of-round screens should use separate UI controllers.
+
+## Legacy Animation Flow
+
+`PlayerController` registers both slide and reset clips with the assigned Legacy `Animation` component.
+
+1. Sliding begins and the slide clip plays with `WrapMode.ClampForever`.
+2. The clip plays once and holds its final frame to simulate sliding.
+3. Sliding finishes and the reset clip plays.
+4. The reset clip holds its final default pose.
+
+All clips must be marked as Legacy. They must all be attached to an Animation component of each object in the hierarchy.
+
+
+The reusable methods are:
+
+```csharp
+SetupAnimationClip(AnimationClip animationClip, WrapMode wrapMode)
+PlayAnimation(AnimationClip animationClip, WrapMode wrapMode)
+```
+
+## Planned WorldController
+
+`WorldController` has not been implemented yet. Its expected responsibilities are:
+
+- Store if the gameplay is paused or not
+- Pause and resume the game
+- Lock and unlock player movement
+- Lock and unlock camera movement
+- Manage cursor visibility and lock state
+- Broadcast state changes to systems listening
+
+Avoid placing these responsibilities inside `PlayerController` or `CameraController`. They should react to shared states rather than owning them for less repeated calculations.
+
+## Adding a New Gameplay System
+
+When adding a system:
+
+1. Give the script one clear responsibility.
+2. Inspector references are preferred.
+3. Document all required components in their set files which can all be found in the [Read Me](..README.md)
+4. Add XML documentation to public classes, methods and properties.
+5. Test the feature in `MovementTest` or a dedicated test scene.
+6. Update this guide, [KnownIssues.md](KnownIssues.md) and [DevelopmentLog.md](DevelopmentLog.md).
+7. Record all your progress.
