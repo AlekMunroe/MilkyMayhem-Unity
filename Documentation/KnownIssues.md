@@ -2,49 +2,23 @@
 
 Update this file when an issue is found, fixed or deliberately postponed.
 
-## Player Setup
-
-### Extra physics components on Player
-
-**Status:** Needs correction
-
-The `Player` in `MovementTest` currently has a CharacterController, CapsuleCollider and non-kinematic Rigidbody. The movement code is designed around the CharacterController. The extra physics components can cause conflicting collision or gravity behaviour.
-
-**Recommendation:** Remove the CapsuleCollider and Rigidbody after confirming no other current feature depends on them.
-
-### Player Visuals is unassigned
-
-**Status:** Open
-
-The `PlayerController.Player Visuals` field is unassigned in `MovementTest`. The CharacterController will shorten during a slide, but the visual object will not scale.
-
-**Recommendation:** Assign the appropriate child visual Transform, probably the `CharacterObjects`, and verify the camera hierarchy is not unintentionally scaled.
-
-### No overhead check after sliding
-
-**Status:** Not implemented
-
-The player restores the full controller height immediately when a slide finishes. Sliding under a low obstacle could make the player overlap the ceiling.
-
-**Recommendation:** Add a standing-clearance check and keep the player lowered until there is enough space. We need to discuss this with the group.
-
 ## Scenes and Builds
 
-### MovementTest is not in Build Settings
+### Development scene list is temporary
 
-**Status:** Open
+**Status:** Planned update
 
-Build Settings contains a disabled reference to the removed `Assets/Scenes/SampleScene.unity`. `Assets/Scenes/_testing/MovementTest.unity` is not included. This is intentional however may be necessary to temporarily add for game testing using a build.
+`DevMenu` and `MovementTest` are currently included in Build Settings for development builds. `DevMenu` loads first and has buttons to load into development scenes.
 
-**Recommendation:** Add the intended playable scene before creating a build. Keep test scenes disabled for production builds.
+**Recommendation:** Replace the scene with a final menu when a Main Menu is built.
 
-### Player is not a prefab
+### DevMenu depends on manually configured scene names
 
-**Status:** Open
+**Status:** Prototype
 
-The player setup currently exists directly in the test scene. Reusing this in other scenes may be difficult over time.
+`Dev_MainMenu` warns when a scene is not in Build Settings, but menu buttons must still be configured with the correct scene names.
 
-**Recommendation:** Complete the player systems then create a prefab.
+**Recommendation:** Update its scene list whenever development scenes change. Update the system when a real main menu is created.
 
 ## Input and Game State
 
@@ -62,31 +36,13 @@ Scripts read `Keyboard.current` and `Mouse.current` directly. This is simple but
 
 ## UI
 
-### PlayerUIController assumes references are assigned
+### PlayerUIController does not automatically locate the player
 
-**Status:** Open
+**Status:** Planned
 
-`PlayerUIController` does not currently check for missing PlayerController or Slider references. An unassigned field will create a NullReferenceException.
+`PlayerUIController` now validates its PlayerController and Slider references and disables itself if either is missing. It still requires the PlayerController reference to be assigned manually in each scene.
 
-### Sprint slider setup is scene-dependent
-
-**Status:** Prototype
-
-The slider expects values from 0 to 1 and is not interactable. These settings are enforced by the slider component directly.
-
-## Camera
-
-### CameraController assumes a mouse exists
-
-**Status:** Open
-
-`CameraController` reads `Mouse.current` without a null check. This is normally safe on the current PC target but should be checked before supporting other input configurations if this is decided in the future.
-
-### Missing camera reference does not disable updates
-
-**Status:** Open
-
-`CameraController.Start` logs an error when `Cam Object` is missing, but the component continues updating and will later access the missing object.
+**Recommendation:** Either locate the player once when the UI starts or provide the reference through the future player-spawning or world-state system. Do not search every frame.
 
 ## Balancing and Testing
 

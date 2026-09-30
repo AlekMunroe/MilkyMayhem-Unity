@@ -50,11 +50,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float slideDuration = 1.2f;
     [SerializeField] private float slideHeight = 1f;
     [SerializeField] private float slideCooldown = 0.5f;
-
-    [Header("Slide Visuals")]
-    [SerializeField] private Transform playerVisuals;
-
-    [SerializeField, Range(0.1f, 1f)] private float slidingHeightMultiplier = 0.5f;
+    [SerializeField] private GameObject playerCam;
+    [SerializeField] private float camSlidingHeight = 0.5f;
 
     [Header("Animations")]
     //Sliding
@@ -103,11 +100,6 @@ public class PlayerController : MonoBehaviour
         
         normalControllerHeight = controller.height;
         normalControllerCenter = controller.center;
-
-        if (playerVisuals != null)
-        {
-            normalVisualScale = playerVisuals.localScale;
-        }
         
         SetupAnimationClip(slideAnimClip, WrapMode.ClampForever);
         SetupAnimationClip(resetAnimClip, WrapMode.ClampForever);
@@ -507,13 +499,8 @@ public class PlayerController : MonoBehaviour
 
         controller.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
 
-        // Visually lower the player while the collider is shortened.
-        if (playerVisuals != null)
-        {
-            Vector3 slidingScale = normalVisualScale;
-            slidingScale.y = normalVisualScale.y * slidingHeightMultiplier;
-            playerVisuals.localScale = slidingScale;
-        }
+        // Visually lower the player's visual height
+        playerCam.transform.position = new Vector3(playerCam.transform.position.x, playerCam.transform.position.y - camSlidingHeight, playerCam.transform.position.z);
 
         PlayAnimation(slideAnimClip, WrapMode.ClampForever);
     }
@@ -529,10 +516,7 @@ public class PlayerController : MonoBehaviour
         controller.height = normalControllerHeight;
         controller.center = normalControllerCenter;
 
-        if (playerVisuals != null)
-        {
-            playerVisuals.localScale = normalVisualScale;
-        }
+        playerCam.transform.position = new Vector3(playerCam.transform.position.x, playerCam.transform.position.y + camSlidingHeight, playerCam.transform.position.z);
 
         // The reset animation returns animated objects to their default pose.
         PlayAnimation(resetAnimClip, WrapMode.ClampForever);

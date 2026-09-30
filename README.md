@@ -18,10 +18,10 @@ Open the project using the exact Unity version above. Opening and saving it in a
 1. Clone the repository.
 2. Open the project folder through Unity Hub using Unity `6000.3.19f1`.
 3. Allow Unity to restore the packages listed in `Packages/manifest.json`.
-4. Open `Assets/Scenes/_testing/MovementTest.unity` manually.
+4. Open `Assets/Scenes/_testing/DevMenu.unity` to test scene loading, or open `Assets/Scenes/_testing/MovementTest.unity` to work directly on movement.
 5. Enter Play mode and test the controls below.
 
-`MovementTest` is not currently enabled in Build Settings. The disabled Build Settings entry still points to the removed `SampleScene`, so do not rely on **Build and Run** until the scene list is corrected.
+`DevMenu` and `MovementTest` are both included in Build Settings. `DevMenu` is first and therefore opens when a development build starts. Its buttons load the available development scenes.
 
 ## Current Controls
 
@@ -43,9 +43,8 @@ Open the project using the exact Unity version above. Opening and saving it in a
 
 ## Current Priorities
 
-1. Correct and convert the player setup into a reusable prefab.
+1. Import Joe's initial greybox models and create the environment scene.
 2. Build a dedicated parkour testing area and balance movement values.
 3. Create a `WorldController` for pausing, cursor state, camera locking and shared game state.
-4. Add milk-bottle throwing and delivery zones.
-5. Add scoring, a round timer and hazards.
-
+4. Update `PlayerUIController` so it can safely locate the active player when needed.
+5. Add milk-bottle throwing, delivery zones, scoring, a round timer and hazards.

@@ -2,7 +2,70 @@
 
 ## Unity Version
 
-Use Unity `6000.3.19f1`. Discuss an editor upgrade with the group before opening and saving the project in another version. However, updating the project should not be necessary as this is the latest LTS.
+Everyone working directly in the Unity project must use Unity `6000.3.19f1`. Do not open and save the shared project using another Unity version because this can change scenes, assets and project settings. Discuss any editor upgrade with the whole group before changing version.
+
+## Model Creation and Handoff
+
+Create 3D models in a dedicated modelling software such as Blender or Maya. ProBuilder can be used for quick experiments inside Unity, but submitted environment or character models should not depend on ProBuilder unless this has been agreed with the developers beforehand.
+
+Submit each model as an FBX and include all texture image files needed by it. Materials created in modelling software may not transfer perfectly into Unity, so texture files must also be supplied separately.
+
+Before sending a model to a developer:
+
+1. Give the model, objects, materials and texture files clear names.
+2. Organise related objects into a sensible hierarchy rather than leaving many unnamed objects at the root.
+3. Apply or freeze transforms and check that the model uses a sensible scale, orientation and pivot point.
+4. Remove unused objects, materials and test geometry.
+5. Export the finished model as an FBX.
+6. Include its required texture images in a clearly named folder.
+7. Import the exported files into Unity `6000.3.19f1` and confirm that the model appears correctly.
+8. Check that there are no missing meshes, pink materials or Console errors before handing the files to a developer.
+
+### Submitting Model Files
+
+Send models to a developer as a ZIP file separate from the Unity project. Do not add unreviewed model files directly to the project's `Assets` folder or commit them to GitHub. This allows a developer to check the files and organise them correctly before they become part of the project.
+
+Name the ZIP file clearly using the asset name and version, for example `TownGreybox_v1.zip`. Its contents should be organised like this Blender example:
+
+```text
+TownGreybox_v1
+├── Source
+|   ├── TownGreyBox.Blend
+|   ├── References
+|   |   ├── TownLayout.png
+|   |   └── BuildingReferences.jpg
+|   └── Textures
+|       ├── Road_BaseColour.png
+|       └── Road_Normal.png
+├── TownGreybox.fbx
+├── Textures
+│   ├── Road_BaseColour.png
+│   └── Road_Normal.png
+├── Preview.png
+└── SubmissionNotes.txt
+```
+
+The preview image is optional but recommended because it helps the developer confirm how the model is expected to look. The original Blender or Maya source file should also be included in a clearly named `Source` folder when another team member may need to edit it.
+
+Do not include an entire Unity project or generated folders such as `Library`, `Temp`, `Logs` or `obj`. Only include the model, its textures, any useful source file, a preview and the submission notes.
+
+Use the following template in `SubmissionNotes.txt`:
+
+```text
+Asset name:
+Created by:
+Date:
+Version:
+Intended use or scene:
+Files included:
+Scale or measurement units:
+Material and texture information:
+Special setup requirements:
+Unity version tested in: 6000.3.19f1
+Known issues:
+```
+
+Before submitting the ZIP file, extract it into a separate folder and check that it contains everything listed in the notes. The developer will review the submission, import accepted files into the correct project folders and create or adjust Unity materials when required.
 
 ## Folder Structure
 

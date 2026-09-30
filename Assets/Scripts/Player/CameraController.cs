@@ -23,6 +23,15 @@ public class CameraController : MonoBehaviour
         {
             Debug.LogError("CameraController: The camObject has not been assigned.");
 
+            enabled = false;
+            return;
+        }
+
+        if (Mouse.current == null)
+        {
+            Debug.LogWarning("CameraController: Mouse is not detected. Please ensure a mouse is connected to the computer.");
+
+            enabled = false;
             return;
         }
     }

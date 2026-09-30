@@ -9,7 +9,7 @@ This guide describes the current code structure and the responsibilities of each
 ```text
 Keyboard and mouse
         |
-        +--> PlayerController ------> CharacterController movement
+        +--> PlayerController ------> CharacterController (movement)
         |          |
         |          +---------------> SprintStaminaPercent
         |                                  |
@@ -20,8 +20,12 @@ Keyboard and mouse
         |                              UI Slider
         |
         +--> CameraController ------> Player yaw and camera pitch
-        |-!
+
 Future WorldController -----------> Pause, input locks and shared state
+        |
+        +--> PlayerController (Pause state)
+        +--> CameraController (Pause state)
+        +--> PlayerUIController (Share state)
 ```
 
 The current scripts read devices directly through `Keyboard.current` and `Mouse.current`. There is no Input Actions asset or central input wrapper yet however, this is to be implemented in the future.
@@ -41,7 +45,7 @@ Implemented features:
 - Wall detection on all four sides
 - Temporary wall clinging, wall sliding and wall jumping
 - Ground sliding with a reduced controller height
-- Visual scaling during a slide
+- Camera lowering during a slide using `camSlidingHeight`
 - Legacy slide and reset animation playback
 
 Important public API:
@@ -57,7 +61,7 @@ Important dependencies:
 - `CharacterController` on the same GameObject
 - A `GroundCheck` child Transform
 - Ground and Wall layer masks
-- A child Transform assigned to `Player Visuals`
+- A camera GameObject assigned to `Player Cam`
 - A Legacy `Animation` component
 - Legacy slide and reset clips
 
@@ -99,6 +103,18 @@ Required references:
 
 Future player HUD elements such as health or interaction prompts can be added here. Pause menus, settings and end-of-round screens should use separate UI controllers.
 
+`PlayerUIController` now validates both references in `Awake`, disables itself when a necessary reference is missing and makes the sprint slider non-interactable automatically. It does not locate the player automatically yet. This is a future development.
+
+## Dev Main Menu
+
+**Path:** `Assets/Scripts/_Dev/Dev_MainMenu.cs`
+
+**Responsibility:** Provides a temporary entry point for development builds.
+
+`DevMenu` is the first scene in Build Settings. `Dev_MainMenu` it checks if the scene names exist and logs a warning when one does not exist. Its public `LoadScene` method is used by menu buttons to load into development scenes.
+
+This is a development only system. When a real main menu exists, the development scene list and startup behaviour must be changed and hidden to public non development builds.
+
 ## Legacy Animation Flow
 
 `PlayerController` registers both slide and reset clips with the assigned Legacy `Animation` component.
@@ -137,7 +153,7 @@ When adding a system:
 
 1. Give the script one clear responsibility.
 2. Inspector references are preferred.
-3. Document all required components in their set files which can all be found in the [Read Me](..README.md)
+3. Document all required components in the relevant files linked from the [Read Me](../README.md).
 4. Add XML documentation to public classes, methods and properties.
 5. Test the feature in `MovementTest` or a dedicated test scene.
 6. Update this guide, [KnownIssues.md](KnownIssues.md) and [DevelopmentLog.md](DevelopmentLog.md).

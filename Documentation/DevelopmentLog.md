@@ -49,12 +49,25 @@ This is a working record of development decisions and progress. It can later be 
 - Recorded player setup, system responsibilities and coding conventions.
 - Recorded current setup problems and unfinished systems.
 
+## 30 September 2026 Setup Fixes
+
+- Removed the CapsuleCollider and Rigidbody from the Player and retested the player movement and other player systems.
+- Converted the Player into `Assets/Prefabs/Player.prefab` to reuse between scenes.
+- Tested visual scaling for sliding and decided to move away from scaling the entire root of the Player.
+- Updated sliding visuals to lower the camera using `camSlidingHeight`, then reset the camera to its original height when sliding finishes.
+- Decided not to support sliding under low obstacles, so a standing clearance check is not currently required.
+- Added `DevMenu` and `MovementTest` to Build Settings, with `DevMenu` loading first.
+- Created `Dev_MainMenu` to validate configured development scenes and load them through UI buttons.
+- Added missing reference checks to `PlayerUIController` and made the sprint slider non interactable.
+- Added missing camera and missing mouse checks to `CameraController`. The component disables itself when either component is missing.
+
 ## Next Tasks
 
-- Correct the player physics components and assign `Player Visuals`.
-- Convert the player into a prefab.
+- Add Joe's initial greybox models.
+- Create and test the greybox environment scene.
 - Create `WorldController` and a pause menu.
-- Build a dedicated parkour testing area.
+- Update `PlayerUIController` so it can locate the active player when appropriate.
+- Replace the development Build Settings with final playable scenes when they exist.
 - Test and balance all movement values.
 - Add milk-bottle throwing.
 - Add delivery zones.

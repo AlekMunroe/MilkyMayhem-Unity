@@ -2,7 +2,7 @@
 
 ## Recommended Hierarchy
 
-The current scene contains the required objects, but the setup should eventually be converted into a prefab.
+The player is stored in `Assets/Prefabs/Player.prefab`. Edit shared player behaviour in Prefab Mode so every scene updates the player.
 
 ```text
 Player
@@ -14,7 +14,7 @@ Player
 └── GroundCheck
 ```
 
-If more visual objects are added, keep them below a dedicated child such as `CharacterObjects` or `PlayerVisuals`. Assign that child to the `Player Visuals` field. Do not assign the root `Player` Transform because scaling the root also affects the controller and its children.
+If more visual objects are added, keep them below the child object `CharacterObjects`. The root Player must not be scaled during sliding as this would also scale the CharacterController, camera, GroundCheck and future held objects.
 
 ## Components on Player
 
@@ -25,7 +25,7 @@ The recommended root components are:
 - `CameraController`
 - Legacy `Animation`
 
-Do not combine a non-kinematic Rigidbody or a separate CapsuleCollider with the CharacterController. The `CharacterController` already provides the collision shape used by the movement script.
+Do not add a Rigidbody or separate CapsuleCollider. The `CharacterController` already provides the collision shape used by the movement script. The old extra components were removed and the player was retested and works as expected.
 
 ## PlayerController Inspector Setup
 
@@ -70,16 +70,15 @@ The scene currently stores `Max Wall Cling Time` as `0.1`, while the script defa
 
 Assign the following:
 
-- `Player Visuals`: a child visual Transform, normally `CharacterObjects`
+- `Player Cam`: the camera object that should lower during a slide
+- `Cam Sliding Height`: the amount the camera moves down while sliding
 - `Player Anim`: the Legacy `Animation` component
 - `Slide Anim Clip`: `Assets/Animations/Character/Slide.anim`
 - `Reset Anim Clip`: `Assets/Animations/Character/Reset.anim`
 
-The current `MovementTest` scene has the animation references assigned but `Player Visuals` is unassigned. Collider height changes will still occur, but visible scaling will not happen until the field is assigned.
+Sliding does not reduce the CharacterController height and only lowers the camera by `Cam Sliding Height`. When the slide finishes, the camera returns to its original standing position. This replaced the earlier setup which scaled the root Player object directly.
 
 All animation clips must be set to Legacy in the debug settings of the animation. The slide clip plays once and holds its final pose. The reset clip returns animated objects to their normal pose.
-
-Do not animate the assigned `Player Visuals.localScale` inside the clips if the script controls that scale.
 
 ## CameraController Setup
 
@@ -95,7 +94,7 @@ The camera should be a child of the player so horizontal player rotation also tu
 2. Add a UI Slider named `SprintSlider`.
 3. Set the slider minimum to 0 and maximum to 1.
 4. Disable slider interaction because it only displays stamina.
-5. Add `PlayerUIController` to a dedicated `World Controller` object or child of it.
+5. Add `PlayerUIController` to the a dedicated child object under the dedicated `Controllers` object.
 6. Assign the Player's `PlayerController`.
 7. Assign `SprintSlider`.
 
@@ -110,7 +109,7 @@ Before committing player changes, verify:
 - Coyote time and short jumps work.
 - Wall cling changes into a wall slide after the configured duration.
 - Ctrl starts a slide while moving on the ground.
-- The controller and visual height restore after sliding.
+- The controller height and camera position reset after sliding.
 - Slide and reset animations both play.
 - The sprint slider follows the stamina value.
 - The Console has no errors or warnings caused by missing references.
