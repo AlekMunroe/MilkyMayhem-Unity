@@ -2,7 +2,7 @@
 
 Milky Mayhem is a first-person parkour delivery game. The player controls a milkman who must move quickly through the environment, deliver milk and avoid hazards while trying to achieve a high score.
 
-The project is currently in the grey box prototyping stage. Walking, camera movement, parkour jumping, sprint stamina, wall movement, sliding, Legacy slide animations and a sprint UI have been implemented. Delivery gameplay and overall game-state management are not yet implemented.
+The project is currently in the grey box prototyping stage. Walking, camera movement, parkour jumping, sprint stamina, wall movement, sliding, airborne momentum, Legacy slide animations, a sprint UI and prototype pause management have been implemented. Delivery gameplay is not yet implemented.
 
 ## Requirements
 
@@ -32,6 +32,7 @@ Open the project using the exact Unity version above. Opening and saving it in a
 | Sprint | Left or Right Shift |
 | Jump or wall jump | Space |
 | Slide | Left or Right Ctrl while moving on the ground |
+| Pause or resume | Escape |
 
 ## Documentation
 
@@ -43,8 +44,8 @@ Open the project using the exact Unity version above. Opening and saving it in a
 
 ## Current Priorities
 
-1. Import Joe's initial greybox models and create the environment scene.
-2. Build a dedicated parkour testing area and balance movement values.
-3. Create a `WorldController` for pausing, cursor state, camera locking and shared game state.
+1. Import a working and tested FBX version of Joe's greybox, including its required textures.
+2. Create the greybox environment scene and update movement to work inside it.
+3. Complete the remaining pause-system safety checks and scene-change handling.
 4. Update `PlayerUIController` so it can safely locate the active player when needed.
-5. Add milk-bottle throwing, delivery zones, scoring, a round timer and hazards.
+5. Add milk-bottle throwing and placing, delivery zones, scoring, a round timer and hazards.

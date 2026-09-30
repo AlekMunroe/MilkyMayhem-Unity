@@ -61,15 +61,39 @@ This is a working record of development decisions and progress. It can later be 
 - Added missing reference checks to `PlayerUIController` and made the sprint slider non interactable.
 - Added missing camera and missing mouse checks to `CameraController`. The component disables itself when either component is missing.
 
+## 30 September 2026 World State and Movement Fixes
+
+- Created a `WorldController` instance and added it to `MovementTest` under the `Controllers` GameObject.
+- Added the `isGamePaused` state and the Escape key is used for pause toggling.
+- Added cursor locking, visibility control and direct coordination of PlayerController and CameraController during pausing.
+- Added a PlayerController instance, a pause update method and a method that returns the CameraController.
+- Added a PlayerController startup check that checks if a WorldController instance exists.
+- Moved the WorldController's CameraController lookup from `Awake` to `Start` so the PlayerController instance is available first.
+- Created `PauseMenuController` with resume, return confirmation and menu loading buttons.
+- Added the pause menu to `MovementTest` and set up index `0` as the current main menu scene location.
+- Added an unused time scale helper methods for possible future use. pausing does not currently change `Time.timeScale`.
+- Fixed normal jumps next to walls by preventing wall clinging while the player is grounded or travelling upwards and by prioritising ground and coyote jumps over wall jumps.
+- Allowed sprint movement to continue while the player is airborne.
+- Added horizontal airborne momentum with customisable `airAcceleration` and `airDrag` values.
+- Created the development only `Dev_InputVisualiser` prefab for displaying W, A, S, D, Space, Escape, Shift and Ctrl during recordings.
+- Compiled the current C# project successfully with no compiler warnings or errors.
+
+### Testing Notes
+
+- The first pause test failed because WorldController had not been added to the scene.
+- After adding the controller, the missing CameraController reference was traced to initialization order and fixed by performing the lookup in `Start`.
+- The wall-jump, airborne sprint and momentum problems were recreated before their fixes were added.
+
 ## Next Tasks
 
-- Add Joe's initial greybox models.
+- Receive a tested FBX export of Joe's greybox with the required textures, then import and organise it.
 - Create and test the greybox environment scene.
-- Create `WorldController` and a pause menu.
-- Update `PlayerUIController` so it can locate the active player when appropriate.
-- Replace the development Build Settings with final playable scenes when they exist.
-- Test and balance all movement values.
-- Add milk-bottle throwing.
+- Add reference checks and scene change reset functions to the pause system.
+- Update `PlayerUIController` so it can locate the active player when necessary.
+- Replace the development Build Settings with the final scenes when they exist.
+- Test and modify all the movement values to match the greybox.
+- Add milk bottle throwing.
+- Add milk placing mechanics.
 - Add delivery zones.
 - Add scoring and a round timer.
 - Add hazards.

@@ -22,11 +22,37 @@ Update this file when an issue is found, fixed or deliberately postponed.
 
 ## Input and Game State
 
-### No WorldController or pause state
+### Pause system is still a prototype
 
-**Status:** Planned
+**Status:** Implemented with limitations
 
-The player and camera scripts update whenever the components are enabled. There is no shared state for pausing, movement or locking controls.
+`WorldController` now controls the PlayerController, CameraController, cursor and pause menu. It does not change `Time.timeScale`, so future physics, animations, timers or gameplay scripts will continue running unless they are explicitly connected to the pause flow.
+
+**Recommendation:** When adding throwing, delivery or timer systems, decide how each system behaves while paused and connect it through `WorldController`.
+
+### Pause state is not reset explicitly
+
+**Status:** Open
+
+`isGamePaused` is static and does not reset when a scene starts. Going to a new scene while paused may leave the state out of place, the cursor and other controls may not work as intended.
+
+**Recommendation:** Reset the pause state and any changed global state during scene startup or shutdown, then test pausing when changing scenes. A loading system may be required to confirm everything works before unloading and loading a new scene.
+
+### WorldController assumes required references exist
+
+**Status:** Open
+
+`WorldController.Start` assumes that `PlayerController.Instance` and its CameraController exist. `Update` assumes a keyboard exists, and the pause flow assumes `Pause Menu UI` has been assigned. Missing requirements may produce a `NullReferenceException` error.
+
+**Recommendation:** Confirm the player, camera, keyboard and pause-menu references before using them. Disable the affected behaviour and log a clear error when a reference is unavailable.
+
+### Pause API contains unfinished helpers
+
+**Status:** Prototype cleanup
+
+The current public pause entry point is `UpdatePause()`, which toggles state. Separate `PauseGame`, `ResumeGame` and `TogglePause` methods have not been created. `TogglePauseMenu` is empty, while `SetGameSpeed` and `ResetGameSpeed` are currently unused.
+
+**Recommendation:** Remove the unused helpers or complete and rename the pause API before more gameplay systems depend on it.
 
 ### Direct device input
 
@@ -34,19 +60,22 @@ The player and camera scripts update whenever the components are enabled. There 
 
 Scripts read `Keyboard.current` and `Mouse.current` directly. This is simple but makes rebinding, controller support and automated input testing harder.
 
+The development input visualiser assumes a keyboard is connected and does not have any checks. This is acceptable for a development side setup but may require a patch if other devices are unsupported.
+
 ## UI
 
 ### PlayerUIController does not automatically locate the player
 
 **Status:** Planned
 
-`PlayerUIController` now validates its PlayerController and Slider references and disables itself if either is missing. It still requires the PlayerController reference to be assigned manually in each scene.
+`PlayerUIController` now checks PlayerController and Slider references and disables itself if either is missing. It still requires the PlayerController reference to be assigned manually in each scene.
 
-**Recommendation:** Either locate the player once when the UI starts or provide the reference through the future player-spawning or world-state system. Do not search every frame.
+**Recommendation:** Either locate the player once when the UI starts or provide the reference through the future player spawning or world state system. Do not search every frame.
 
 ## Balancing and Testing
 
 - Movement, jump, wall and slide values need structured playtesting.
+- Air acceleration and air drag have been added but still require playtesting in the final environment.
 - The scene stores some values that differ from script defaults, including sprint stamina and wall-cling time.
 - Wall clinging activates automatically when the airborne player is close enough to a Wall-layer surface.
 - No automated gameplay tests currently exist.

@@ -8,9 +8,15 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController Instance { get; private set; }
+    
     [Header("Movement")]
     [SerializeField] private float speed = 6f;
     [SerializeField] private float gravity = -20f;
+    [SerializeField] private float airAcceleration = 5f;
+    [SerializeField] private float airDrag = 1.5f;
+
+    private Vector3 horizontalVelocity;
 
     [Header("Sprinting")]
     [SerializeField] private float sprintSpeed = 10f;
@@ -58,7 +64,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Animation playerAnim;
     [SerializeField] private AnimationClip slideAnimClip;
     [SerializeField] private AnimationClip resetAnimClip; //Used to reset all animations to the default state
-
+    
     private CharacterController controller;
     private Vector3 velocity;
     private bool isGrounded;
@@ -85,6 +91,8 @@ public class PlayerController : MonoBehaviour
     private Vector3 slideDirection;
 
     private Vector3 normalVisualScale;
+
+    private bool freezePlayer;
     
     /// <summary>
     /// Get the current sprint stamina as a value between 0 and 1 for the UI
@@ -93,6 +101,17 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
+        // Setup instance
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("Duplicate PlayerController Instance destroyed");
+            
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        
         controller = GetComponent<CharacterController>();
 
         currentMovementSpeed = speed;
@@ -104,6 +123,14 @@ public class PlayerController : MonoBehaviour
         SetupAnimationClip(slideAnimClip, WrapMode.ClampForever);
         SetupAnimationClip(resetAnimClip, WrapMode.ClampForever);
     }
+    
+    void Start()
+    {
+        if (WorldController.Instance == null)
+        {
+            Debug.LogError("PlayerController: No WorldController found.");
+        }
+    }
 
     private void Update()
     {
@@ -114,13 +141,18 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
+
+        if (freezePlayer)
+        {
+            return;
+        }
         
         UpdateGroundCheck();
         UpdateSliding(keyboard);
         UpdateJumpTimers(keyboard);
         UpdateWallState();
         if (!isSliding) //Make sure you cant jump while sliding
-        {
+        { 
             HandleJumping(keyboard);
         }
         UpdateSprint(keyboard);
@@ -202,23 +234,41 @@ public class PlayerController : MonoBehaviour
         // Stops diagonal movement from being faster than forward
         moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
-        // Slowly remove the force from a wall jump
-        wallJumpVelocity = Vector3.MoveTowards(wallJumpVelocity, Vector3.zero, wallJumpVelocityDecay * Time.deltaTime);
-        
-        // Use walking or sprinting speed
-        //Vector3 finalMovement = (moveDirection * currentMovementSpeed) + wallJumpVelocity;
+        // Airborne movement
+        Vector3 targetHorizontalVelocity = moveDirection * currentMovementSpeed;
 
-        Vector3 horizontalMovement;
-        if (isSliding)
+        if (isGrounded)
         {
-            horizontalMovement = slideDirection * slideSpeed;
+            // Ground movement, this responds immediately
+            horizontalVelocity = targetHorizontalVelocity;
+        }
+        else if (moveDirection.sqrMagnitude > 0.01f)
+        {
+            // Change the direction in the air gradually
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetHorizontalVelocity, airAcceleration * Time.deltaTime);
         }
         else
         {
-            horizontalMovement = (moveDirection * currentMovementSpeed) + wallJumpVelocity;
+            // Slowly lose momentum when WASD is not held
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, Vector3.zero, airDrag * Time.deltaTime);
+        }
+        
+        // Slowly remove all extra force from a wall jump
+        wallJumpVelocity = Vector3.MoveTowards(wallJumpVelocity, Vector3.zero, wallJumpVelocityDecay * Time.deltaTime);
+
+        Vector3 horizontalMovement;
+
+        if (isSliding)
+        {
+            horizontalMovement = slideDirection * slideSpeed;
+            horizontalVelocity = horizontalMovement;
+        }
+        else
+        {
+            horizontalMovement = horizontalVelocity + wallJumpVelocity;
         }
 
-        Vector3 finalMovement = horizontalMovement;
+    Vector3 finalMovement = horizontalMovement;
         
         // Add jumping, gravity or the wall sliding
         finalMovement.y = velocity.y;
@@ -278,15 +328,15 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (isWallClinging)
-        {
-            PerformWallJump();
-            return;
-        }
-
         if (coyoteTimer > 0f)
         {
             PerformParkourJump();
+            return;
+        }
+        
+        if (isWallClinging)
+        {
+            PerformWallJump();
         }
     }
     
@@ -332,7 +382,7 @@ public class PlayerController : MonoBehaviour
 
         bool canSprint = currentSprintStamina > 0f;
 
-        bool isSprinting = shiftHeld && movementKeyHeld && canSprint && isGrounded;
+        bool isSprinting = shiftHeld && movementKeyHeld && canSprint;
         
         if (isSprinting)
         {
@@ -363,7 +413,7 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void UpdateWallState()
     {
-        if (isGrounded)
+        if (isGrounded || velocity.y > 0f)
         {
             isWallClinging = false;
             wallClingTimer = 0f;
@@ -590,5 +640,23 @@ public class PlayerController : MonoBehaviour
         animationState.wrapMode = wrapMode;
         
         playerAnim.Play(animationClip.name, PlayMode.StopAll);
+    }
+
+    public void UpdatePause(bool isPaused)
+    {
+        if (isPaused && WorldController.isGamePaused)
+        {
+            freezePlayer = true;
+            Debug.Log("Player Paused");
+            return;
+        }
+
+        freezePlayer = false;
+        Debug.Log("Player Unpaused");
+    }
+
+    public CameraController GetCameraController()
+    {
+        return GetComponent<CameraController>();
     }
 }

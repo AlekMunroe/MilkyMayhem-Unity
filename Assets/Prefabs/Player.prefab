@@ -50,7 +50,7 @@ GameObject:
   - component: {fileID: 1990719714502617060}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -177,6 +177,7 @@ MonoBehaviour:
   playerAnim: {fileID: 1990719714502617060}
   slideAnimClip: {fileID: 7400000, guid: 871badd787165564dab678c07d5636e4, type: 2}
   resetAnimClip: {fileID: 7400000, guid: 30709b229084b45488f57359e1f71781, type: 2}
+  cameraController: {fileID: 4369590598907748003}
 --- !u!143 &6043181417058025311
 CharacterController:
   m_ObjectHideFlags: 0
