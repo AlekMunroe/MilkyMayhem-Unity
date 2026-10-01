@@ -5,7 +5,9 @@ public class MilkCrate : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private int numOfBounces = 0;
     [SerializeField] private float bounceIntensity = 500f;
+    [SerializeField] private float bounceDecayMaxCooldown = 0.1f;
 
+    private float bounceDecayCooldown;
     new private Collider collider;
     new private Rigidbody rigidbody;
 
@@ -15,25 +17,36 @@ public class MilkCrate : MonoBehaviour
         rigidbody = GetComponent<Rigidbody>();
     }
 
+    private void Update()
+    {
+        if (bounceDecayCooldown > 0)
+        {
+            Debug.Log("Cooldown: " + bounceDecayCooldown);
+            bounceDecayCooldown -= Time.deltaTime;
+        }
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        if (numOfBounces > 0)
+        if (numOfBounces <= 0 && bounceDecayCooldown <= 0)
+        {
+            Destroy(gameObject);
+        }
+        else
         {
             ContactPoint contactPoint = collision.contacts[0];
             rigidbody.AddForce(FindForceDirection(contactPoint) * bounceIntensity);
             numOfBounces--;
-        }
-        else
-        {
-            Destroy(gameObject);
+            if (bounceDecayCooldown <= 0)
+            {
+                bounceDecayCooldown = bounceDecayMaxCooldown;
+            }
         }
     }
 
     /// <summary>
     /// Called when colliding with an object. Calculates the direction of the force to bounce.
     /// </summary>
-    /// <param name="contactPoint"></param>
-    /// <returns></returns>
     private Vector3 FindForceDirection(ContactPoint contactPoint)
     {
         Vector3 forceDirection = transform.position - contactPoint.point;

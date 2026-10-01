@@ -62,6 +62,14 @@ Scripts read `Keyboard.current` and `Mouse.current` directly. This is simple but
 
 The development input visualiser assumes a keyboard is connected and does not have any checks. This is acceptable for a development side setup but may require a patch if other devices are unsupported.
 
+## Midair Movement
+
+**Status:** Open
+
+Current implementation of `PlayerController` does not update midair momentum when wall jumping, resulting in the player continuing moving towards the wall after a wall jump. Should not be intended behaviour and if left untouched would result in other external player movements not affect the final player momentum.
+
+**Recommendation:** Update the player midair momentum when other sources of movement affect the player.
+
 ## UI
 
 ### PlayerUIController does not automatically locate the player

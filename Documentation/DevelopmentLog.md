@@ -98,6 +98,33 @@ This is a working record of development decisions and progress. It can later be 
 - Add scoring and a round timer.
 - Add hazards.
 
+## 01 October 2026 Milk Projectile, Throwing Logic and Bases of Checkpoints
+## These changes are found under feature/throwablemilk
+
+- Created a MilkCrate projectile Prefab located in the Prefab folder.
+- Created `MilkCrate` with logic of the milk projectile and added it to `MilkCrate` Prefab GameObject.
+- Created `MilkThrowing` with logic of the milk throwing mechanic and added it to `MovementTest` under the `CamPos` GameObject.
+- Created `MilkCheckpoint` with basic debug function for milk projectile detection and added it to `Checkpoint` Prefab GameObject.
+- Added `Player` Layer and assigned it to the `Player` GameObject and its children GameObjects.
+- Added `Projectile` Tag and assigned it to the `MilkCrate` Prefab GameObject.
+- Added `Checkpoint` Tag and assigned it to the `Checkpoint` Prefab GameObject.
+
+## Testing Notes
+
+- The projectile bounces along one of the corners when it lands on its flat side when dropped vertically without rotation. The projectile spawned by the player will have randomised rotation and angular velocity.
+- The projectile would quickly despawn if it was bounced in a corner. A cooldown was added to make the experience of using the bouncy projectile more forgiving.
+- A customisable offset was added for future usage when first person animations are to be added to make the throwing animation more seemless.
+
+## Bugs Noticed
+
+- The world, while paused, does not freeze player interaction with throwing milk, allowing them to keep creating instances of milk projectiles as of the current implementation.
+- The player is able to repeatively wall jump off the same wall when not holding any direction keys. Can be noted as mid air momentum is not changed by other means after the initial jump.
+
+## Next Tasks
+
+- Finalise and Polish milk thowing mechanic and milk projectile.
+- Implement proper delivery zone logic and gameplaye events.
+
 ## Entry Template
 
 ### Date and Feature
