@@ -5,6 +5,7 @@ public class MilkThrowing : MonoBehaviour
 {
     [Header("Settings")]
     [SerializeField] private float throwStrength = 500f;
+    [SerializeField] private float playerVelocityMultiplier = 25f;
     [SerializeField] private float throwMaxCooldown = 2f;
     [SerializeField] private Vector3 projectileSpawnPointOffset = new Vector3(0, 0, 0);
 
@@ -14,12 +15,23 @@ public class MilkThrowing : MonoBehaviour
     [Header("Projectile Object")]
     [SerializeField] private Rigidbody projectilePrefab;
 
+    [Header("Player Object")]
+    [SerializeField] private GameObject playerObject;
+
     private Vector3 projectileSpawnPoint;
     private float throwCooldown;
+    private Vector3 playerVelocity;
+    private CharacterController playerController;
+
 
     private void Awake()
     {
-        
+        //References the player object's CharacterController component.
+        if (playerObject == null)
+        {
+            playerObject = GameObject.FindGameObjectWithTag("Player");
+        }
+        playerController = playerObject.GetComponent<CharacterController>();
     }
 
     private void Update()
@@ -44,8 +56,8 @@ public class MilkThrowing : MonoBehaviour
             throwCooldown -= Time.deltaTime;
         }
         
-
-        if (throwPressed && throwCooldown <= 0)
+        //Temporary fix for throwing while paused. Will be replaced with a proper event system later.
+        if (throwPressed && throwCooldown <= 0 && Time.timeScale > 0)
         {
             ThrowMilk();
         }
@@ -60,9 +72,16 @@ public class MilkThrowing : MonoBehaviour
         projectileSpawnPoint = transform.position + projectileFinalOffset;
         Quaternion projectileRotation = Random.rotation;
         float randomRotation = Random.Range(-randomRange,randomRange);
+
+        //Reads the velocity returned by the CharacterController.
+        playerVelocity = playerController.velocity;
+        Debug.Log(playerVelocity);
+
         Rigidbody spawnedProjectile = Instantiate(projectilePrefab, projectileSpawnPoint, projectileRotation);
-        spawnedProjectile.AddForce(transform.forward * throwStrength);
+
+        spawnedProjectile.AddForce(transform.forward * throwStrength + playerVelocity * playerVelocityMultiplier);
         spawnedProjectile.AddTorque(randomRange,randomRange,randomRange);
+
         throwCooldown = throwMaxCooldown;
     }
 }

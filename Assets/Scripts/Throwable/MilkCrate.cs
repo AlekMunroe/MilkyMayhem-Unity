@@ -21,7 +21,6 @@ public class MilkCrate : MonoBehaviour
     {
         if (bounceDecayCooldown > 0)
         {
-            Debug.Log("Cooldown: " + bounceDecayCooldown);
             bounceDecayCooldown -= Time.deltaTime;
         }
     }

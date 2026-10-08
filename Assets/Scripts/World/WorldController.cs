@@ -52,6 +52,7 @@ public class WorldController : MonoBehaviour
         {
             isGamePaused = false;
             LockMouse();
+            SetGameSpeed(1f);
             cameraController.enabled = true;
             PlayerController.Instance.UpdatePause(false);
             pauseMenuUI.SetActive(false);
@@ -61,6 +62,7 @@ public class WorldController : MonoBehaviour
         
         isGamePaused = true;
         ReleaseMouse();
+        SetGameSpeed(0f);
         cameraController.enabled = false;
         PlayerController.Instance.UpdatePause(true);
         pauseMenuUI.SetActive(true);

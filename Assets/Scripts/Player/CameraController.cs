@@ -34,6 +34,9 @@ public class CameraController : MonoBehaviour
             enabled = false;
             return;
         }
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void Update()
