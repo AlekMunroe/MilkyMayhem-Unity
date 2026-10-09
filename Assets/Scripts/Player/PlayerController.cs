@@ -1,29 +1,43 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Events;
 
 /// <summary>
-/// Moves the player using a CharacterController and Unity's Input System.
+/// Using Unity's Input System and Rigidbody to move the player.
 /// </summary>
+
 [DisallowMultipleComponent]
-[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController Instance { get; private set; }
-    
+
+    [Header("<color=red>Perminant blocks - READ COMMENT</color>")]
+    // These are only to be used perminantly, do not reference these anywhere else
+    [SerializeField] private bool perm_canSprint;
+    [SerializeField] private bool perm_canJump;
+    [SerializeField] private bool perm_canParkourJump;
+    [SerializeField] private bool perm_canWalk;
+    [SerializeField] private bool perm_canSlide;
+
     [Header("Movement")]
     [SerializeField] private float speed = 6f;
     [SerializeField] private float gravity = -20f;
     [SerializeField] private float airAcceleration = 5f;
     [SerializeField] private float airDrag = 1.5f;
+    [SerializeField] private float groundAcceleration = 45f;
+    [SerializeField] private float groundDeceleration = 55f;
 
-    private Vector3 horizontalVelocity;
+    private Vector2 movementInput;
 
+    
     [Header("Sprinting")]
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float maxSprintStamina = 2f;
     [SerializeField] private float sprintDrainSpeed = 1f;
     [SerializeField] private float sprintRegenerationSpeed = 0.75f;
-    [SerializeField] private float sprintRegenerationDelay = 1f;
+    [SerializeField] private float sprintRegenerationDelay = 1f; 
+    
 
     [Header("Parkour Jump")]
     [SerializeField] private float jumpHeight = 2.5f;
@@ -39,6 +53,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField, Range(0.1f, 1f)]
     private float jumpReleaseMultiplier = 0.5f;
 
+    private bool jumpReleased;
+
     [Header("Wall Movement")]
     [SerializeField] private LayerMask wallMask;
     [SerializeField] private float wallCheckDistance = 0.25f;
@@ -48,7 +64,6 @@ public class PlayerController : MonoBehaviour
     [Header("Wall Jump")]
     [SerializeField] private float wallJumpHeight = 2.5f;
     [SerializeField] private float wallJumpForce = 8f;
-    [SerializeField] private float wallJumpVelocityDecay = 12f;
     [SerializeField] private float wallReattachDelay = 0.25f;
 
     [Header("Sliding")] 
@@ -64,9 +79,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Animation playerAnim;
     [SerializeField] private AnimationClip slideAnimClip;
     [SerializeField] private AnimationClip resetAnimClip; //Used to reset all animations to the default state
+
     
-    private CharacterController controller;
-    private Vector3 velocity;
+    private Rigidbody playerRigidbody;
+    private CapsuleCollider capsuleCollider;
     private bool isGrounded;
 
     private float currentMovementSpeed;
@@ -76,11 +92,10 @@ public class PlayerController : MonoBehaviour
     private float coyoteTimer;
     private float jumpBufferTimer;
 
-    private bool isWallClinging;
+    public bool isWallClinging;
     private float wallClingTimer;
     private float wallReattachTimer;
     private Vector3 wallNormal;
-    private Vector3 wallJumpVelocity;
 
     private bool isSliding;
     private float slideTimer;
@@ -89,191 +104,100 @@ public class PlayerController : MonoBehaviour
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private Vector3 slideDirection;
-
-    private Vector3 normalVisualScale;
-
     private bool freezePlayer;
-    
+
+    private Vector3 normalCameraLocalPosition;
+
     /// <summary>
-    /// Get the current sprint stamina as a value between 0 and 1 for the UI
+    /// Gets the remaining sprint stamina as a value between 1 and 0.
     /// </summary>
-    public float SprintStaminaPercent => currentSprintStamina / maxSprintStamina;
+    public float SprintStaminaPercent
+    {
+        get
+        {
+            if(maxSprintStamina <= 0f)
+            {
+                return 0f;
+            }
+
+            return currentSprintStamina / maxSprintStamina;
+        }
+    }
 
     private void Awake()
     {
-        // Setup instance
-        if (Instance != null && Instance != this)
+        if(Instance != null && Instance != this)
         {
             Debug.LogWarning("Duplicate PlayerController Instance destroyed");
-            
+
             Destroy(gameObject);
             return;
         }
 
         Instance = this;
-        
-        controller = GetComponent<CharacterController>();
+
+        playerRigidbody = GetComponent<Rigidbody>();
+        capsuleCollider = GetComponent<CapsuleCollider>();
+
+        // This script will control gravity so Unity's default gravity should be disabled
+        playerRigidbody.useGravity = false;
 
         currentMovementSpeed = speed;
         currentSprintStamina = maxSprintStamina;
-        
-        normalControllerHeight = controller.height;
-        normalControllerCenter = controller.center;
-        
+
+        normalControllerHeight = capsuleCollider.height;
+        normalControllerCenter = capsuleCollider.center;
+
+        if(playerCam != null)
+        {
+            normalCameraLocalPosition = playerCam.transform.localPosition;
+        }
+
         SetupAnimationClip(slideAnimClip, WrapMode.ClampForever);
         SetupAnimationClip(resetAnimClip, WrapMode.ClampForever);
-    }
-    
-    void Start()
-    {
-        if (WorldController.Instance == null)
-        {
-            Debug.LogError("PlayerController: No WorldController found.");
-        }
     }
 
     private void Update()
     {
-        // The updated way to get input
+        // Get the keyboard
         Keyboard keyboard = Keyboard.current;
 
-        if (keyboard == null)
+        if (keyboard == null || freezePlayer)
         {
             return;
         }
 
+        ReadMovementInput(keyboard);
+        UpdateSliding(keyboard);
+        UpdateJumpTimers(keyboard);
+        UpdateSprint(keyboard);
+
+        if (keyboard.spaceKey.wasReleasedThisFrame)
+        {
+            jumpReleased = true;
+        }
+    }
+
+    private void FixedUpdate()
+    {
         if (freezePlayer)
         {
             return;
         }
-        
+
         UpdateGroundCheck();
-        UpdateSliding(keyboard);
-        UpdateJumpTimers(keyboard);
         UpdateWallState();
-        if (!isSliding) //Make sure you cant jump while sliding
-        { 
-            HandleJumping(keyboard);
+
+        if (!isSliding)
+        {
+            HandleJumping();
         }
-        UpdateSprint(keyboard);
+
         UpdateGravity();
-        Walk();
-    }
+        UpdateMovement();
 
-    /// <summary>
-    /// Checks if the player is on the floor and adds velocity on the Y axis
-    /// </summary>
-    private void UpdateGravity()
-    {
-        if (isGrounded && velocity.y < 0f)
-        {
-            // Keep the player on the ground
-            velocity.y = -2f;
-        }
-
-        if (isWallClinging)
-        {
-            if (wallClingTimer <= maxWallClingTime)
-            {
-                //Stop falling
-                velocity.y = 0f;
-            }
-            else
-            {
-                //Slide down after clinging to the wall for too long
-                velocity.y = -wallSlideSpeed;
-            }
-
-            return;
-        }
-        
-        velocity.y += gravity * Time.deltaTime;
-    }
-
-    /// <summary>
-    /// Reads WASD using the Input System and moves the player
-    /// </summary>
-    private void Walk()
-    {
-        // Keyboard.current, replacing the legacy Input.GetAxis
-        Keyboard keyboard = Keyboard.current;
-
-        if (keyboard == null)
-        {
-            return;
-        }
-
-        float horizontalInput = 0f;
-        float forwardInput = 0f;
-
-        // Read each movement key using the new Input System
-        if (keyboard.aKey.isPressed)
-        {
-            horizontalInput -= 1f;
-        }
-
-        if (keyboard.dKey.isPressed)
-        {
-            horizontalInput += 1f;
-        }
-
-        if (keyboard.sKey.isPressed)
-        {
-            forwardInput -= 1f;
-        }
-
-        if (keyboard.wKey.isPressed)
-        {
-            forwardInput += 1f;
-        }
-
-        Vector3 moveDirection =
-            (transform.right * horizontalInput) +
-            (transform.forward * forwardInput);
-
-        // Stops diagonal movement from being faster than forward
-        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
-
-        // Airborne movement
-        Vector3 targetHorizontalVelocity = moveDirection * currentMovementSpeed;
-
-        if (isGrounded)
-        {
-            // Ground movement, this responds immediately
-            horizontalVelocity = targetHorizontalVelocity;
-        }
-        else if (moveDirection.sqrMagnitude > 0.01f)
-        {
-            // Change the direction in the air gradually
-            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetHorizontalVelocity, airAcceleration * Time.deltaTime);
-        }
-        else
-        {
-            // Slowly lose momentum when WASD is not held
-            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, Vector3.zero, airDrag * Time.deltaTime);
-        }
-        
-        // Slowly remove all extra force from a wall jump
-        wallJumpVelocity = Vector3.MoveTowards(wallJumpVelocity, Vector3.zero, wallJumpVelocityDecay * Time.deltaTime);
-
-        Vector3 horizontalMovement;
-
-        if (isSliding)
-        {
-            horizontalMovement = slideDirection * slideSpeed;
-            horizontalVelocity = horizontalMovement;
-        }
-        else
-        {
-            horizontalMovement = horizontalVelocity + wallJumpVelocity;
-        }
-
-    Vector3 finalMovement = horizontalMovement;
-        
-        // Add jumping, gravity or the wall sliding
-        finalMovement.y = velocity.y;
-        
-        controller.Move(finalMovement * Time.deltaTime);
+        // The released input has now been delt with by the physics update
+        jumpReleased = false;
     }
 
     ///<summary>
@@ -285,9 +209,122 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
+    /// Apply a custom gravity to the Rigidbody
+    /// </summary>
+    private void UpdateGravity()
+    {
+        Vector3 currentVelocity = playerRigidbody.linearVelocity;
+
+        if(isGrounded && currentVelocity.y < 0f)
+        {
+            // A small force down to keep the player on the floor
+            currentVelocity.y = -2f;
+        }
+        else if (isWallClinging)
+        {
+            if(wallClingTimer <= maxWallClingTime)
+            {
+                // Stop the player from falling temporarily
+                currentVelocity.y = 0f;
+            }
+            else
+            {
+                // SLide down
+                currentVelocity.y = -wallSlideSpeed;
+                //currentVelocity.y = wallSlideSpeed;
+            }
+        }
+        else
+        {
+            // Normal graity while in the air
+            currentVelocity.y += gravity * Time.fixedDeltaTime;
+        }
+
+        playerRigidbody.linearVelocity = currentVelocity;
+
+    }
+
+    /// <summary>
+    /// Reads the current WASD input
+    /// </summary>
+    /// <param name="keyboard">Keyboard.current</param>
+    private void ReadMovementInput(Keyboard keyboard)
+    {
+        movementInput = Vector2.zero;
+
+        if (keyboard.aKey.isPressed)
+        {
+            movementInput.x -= 1f;
+        }
+
+        if (keyboard.dKey.isPressed)
+        {
+            movementInput.x += 1f;
+        }
+
+        if (keyboard.sKey.isPressed)
+        {
+            movementInput.y -= 1f;
+        }
+
+        if (keyboard.wKey.isPressed)
+        {
+            movementInput.y += 1f;
+        }
+
+        movementInput = Vector2.ClampMagnitude(movementInput, 1f);
+    }
+
+    /// <summary>
+    /// Reads WASD using the Input System and moves the player
+    /// </summary>
+    private void UpdateMovement()
+    {
+        if (!perm_canWalk)
+        {
+            return;
+        }
+
+        Vector3 currentVelocity = playerRigidbody.linearVelocity;
+        Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+
+        Vector3 targetHorizontalVelocity;
+
+        if (isSliding)
+        {
+            targetHorizontalVelocity = slideDirection * slideSpeed;
+        }
+        else
+        {
+            targetHorizontalVelocity = moveDirection * currentMovementSpeed;
+        }
+
+        float acceleration;
+
+        if (isSliding)
+        {
+            acceleration = groundAcceleration;
+        }
+        else if (isGrounded)
+        {
+            acceleration = moveDirection.sqrMagnitude > 0.01f ? groundAcceleration : groundDeceleration;
+        }
+        else
+        {
+            acceleration = moveDirection.sqrMagnitude > 0.01f ? airAcceleration : airDrag;
+        }
+
+        Vector3 newHorizontalVelocity = Vector3.MoveTowards(currentHorizontalVelocity, targetHorizontalVelocity, acceleration * Time.fixedDeltaTime);
+
+        playerRigidbody.linearVelocity = new Vector3(newHorizontalVelocity.x, currentVelocity.y, newHorizontalVelocity.z);
+    }
+
+    /// <summary>
     /// Update the coyote time, jump buffers and thw wall jump delays
     /// </summary>
-    /// <param name="keyboard"></param>
     private void UpdateJumpTimers(Keyboard keyboard)
     {
         if (isGrounded)
@@ -312,57 +349,81 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Choose between normal jump and wall jump
+    /// handles all jumps
     /// </summary>
-    /// <param name="keyboard"></param>
-    private void HandleJumping(Keyboard keyboard)
+    private void HandleJumping()
     {
-        // If you let go of the space early, you will get a shorter jump
-        if (keyboard.spaceKey.wasReleasedThisFrame && velocity.y > 0f)
-        {
-            velocity.y *= jumpReleaseMultiplier;
-        }
-
-        if (jumpBufferTimer <= 0f)
+        if (!perm_canJump)
         {
             return;
         }
 
-        if (coyoteTimer > 0f)
+        Vector3 currentVelocity = playerRigidbody.linearVelocity;
+
+        if(jumpReleased && currentVelocity.y > 0f)
+        {
+            currentVelocity.y *= jumpReleaseMultiplier;
+            playerRigidbody.linearVelocity = currentVelocity;
+        }
+
+        if(jumpBufferTimer <= 0f)
+        {
+            return;
+        }
+
+        if(coyoteTimer > 0f)
         {
             PerformParkourJump();
             return;
         }
-        
+
         if (isWallClinging)
         {
             PerformWallJump();
         }
     }
+
     
+
     /// <summary>
-    /// Do a normal jump with forward movement
+    /// Do a normal jump with a small forward boost
     /// </summary>
     private void PerformParkourJump()
     {
-        //Alek: Honestly, I dont understand how this calculation works. Reddit tells me it works, I tested it so yeah... :/
-        velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        if (!perm_canParkourJump)
+        {
+            return;
+        }
 
-        wallJumpVelocity += transform.forward * forwardJumpBoost;
+        Vector3 currentVelocity = playerRigidbody.linearVelocity;
+
+        // Alek: Honestly, I dont understand how this calculation works. Reddit tells me it works, I tested it so yeah... :/
+        currentVelocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+        Vector3 forwardBoost = transform.forward * forwardJumpBoost;
+
+        currentVelocity.x += forwardBoost.x;
+        currentVelocity.z += forwardBoost.z;
+
+        playerRigidbody.linearVelocity = currentVelocity;
 
         coyoteTimer = 0f;
         jumpBufferTimer = 0f;
     }
 
     /// <summary>
-    /// Pushes the player up and away from the wall
+    /// Pushes the rigidbody up and away from the wall
     /// </summary>
     private void PerformWallJump()
     {
-        velocity.y = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
+        float upwardSpeed = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
 
-        wallJumpVelocity = wallNormal * wallJumpForce;
+        Vector3 newVelocity = wallNormal * wallJumpForce;
+        newVelocity.y = upwardSpeed;
 
+        playerRigidbody.linearVelocity = newVelocity;
+
+        // Reset values
         isWallClinging = false;
         wallClingTimer = 0f;
         wallReattachTimer = wallReattachDelay;
@@ -370,50 +431,51 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Draining sprint stamina while sprinting and regenerate it if not sprinting
+    /// Drain stamina while sprinting and regenerate it when not sprinting
     /// </summary>
     /// <param name="keyboard"></param>
     private void UpdateSprint(Keyboard keyboard)
     {
+        if (!perm_canSprint)
+        {
+            return;
+        }
+
         bool shiftHeld = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
-
-        bool movementKeyHeld = keyboard.wKey.isPressed || keyboard.aKey.isPressed || keyboard.sKey.isPressed ||
-                               keyboard.dKey.isPressed;
-
+        bool movementHeld = movementInput.sqrMagnitude > 0.01f;
         bool canSprint = currentSprintStamina > 0f;
+        bool isSprinting = shiftHeld && movementHeld && canSprint;
 
-        bool isSprinting = shiftHeld && movementKeyHeld && canSprint;
-        
         if (isSprinting)
         {
             currentMovementSpeed = sprintSpeed;
 
             currentSprintStamina -= sprintDrainSpeed * Time.deltaTime;
-
             currentSprintStamina = Mathf.Max(currentSprintStamina, 0f);
 
             sprintRegenTimer = sprintRegenerationDelay;
         }
+
         else
         {
             currentMovementSpeed = speed;
             sprintRegenTimer -= Time.deltaTime;
 
-            if (sprintRegenTimer <= 0f)
+            if(sprintRegenTimer <= 0f)
             {
                 currentSprintStamina += sprintRegenerationSpeed * Time.deltaTime;
-                
+
                 currentSprintStamina = Mathf.Min(currentSprintStamina, maxSprintStamina);
             }
         }
     }
-    
+
     /// <summary>
     /// Check if the player in the air is touching a wall
     /// </summary>
     private void UpdateWallState()
     {
-        if (isGrounded || velocity.y > 0f)
+        if (isGrounded || playerRigidbody.linearVelocity.y > 0f)
         {
             isWallClinging = false;
             wallClingTimer = 0f;
@@ -447,10 +509,10 @@ public class PlayerController : MonoBehaviour
     /// <returns></returns>
     private bool TryFindWall(out RaycastHit wallHit)
     {
-        Vector3 rayOrigin = controller.bounds.center;
+        Vector3 rayOrigin = capsuleCollider.bounds.center;
         
-        float rayDistance = controller.radius + wallCheckDistance;
-
+        float rayDistance = capsuleCollider.radius + wallCheckDistance;
+        
         if (Physics.Raycast(rayOrigin, transform.forward, out wallHit, rayDistance, wallMask))
         {
             return true;
@@ -500,13 +562,17 @@ public class PlayerController : MonoBehaviour
             animationState.wrapMode = wrapMode;
         }
     }
-
+    
     /// <summary>
     /// Starts, updates and finish the actual sliding
     /// </summary>
-    /// <param name="keyboard"></param>
     private void UpdateSliding(Keyboard keyboard)
     {
+        if (!perm_canSlide)
+        {
+            return;
+        }
+
         if (slideCooldownTimer > 0f)
         {
             slideCooldownTimer -= Time.deltaTime;
@@ -545,12 +611,14 @@ public class PlayerController : MonoBehaviour
         // Shrink the height of the player and keep the bottom part to the floor
         float heightDifference = normalControllerHeight - slideHeight;
 
-        controller.height = slideHeight;
-
-        controller.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
+        capsuleCollider.height = slideHeight;
+        capsuleCollider.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
 
         // Visually lower the player's visual height
-        playerCam.transform.position = new Vector3(playerCam.transform.position.x, playerCam.transform.position.y - camSlidingHeight, playerCam.transform.position.z);
+        if(playerCam != null)
+        {
+            playerCam.transform.localPosition = normalCameraLocalPosition + (Vector3.down * camSlidingHeight);
+        }
 
         PlayAnimation(slideAnimClip, WrapMode.ClampForever);
     }
@@ -563,10 +631,13 @@ public class PlayerController : MonoBehaviour
         isSliding = false;
         slideCooldownTimer = slideCooldown;
         
-        controller.height = normalControllerHeight;
-        controller.center = normalControllerCenter;
+        capsuleCollider.height = normalControllerHeight;
+        capsuleCollider.center = normalControllerCenter;
 
-        playerCam.transform.position = new Vector3(playerCam.transform.position.x, playerCam.transform.position.y + camSlidingHeight, playerCam.transform.position.z);
+        if(playerCam != null)
+        {
+            playerCam.transform.localPosition = normalCameraLocalPosition;
+        }
 
         // The reset animation returns animated objects to their default pose.
         PlayAnimation(resetAnimClip, WrapMode.ClampForever);
@@ -614,7 +685,7 @@ public class PlayerController : MonoBehaviour
 
         return direction;
     }
-    
+
     /// <summary>
     /// Plays a Legacy Animation clip from its first frame.
     /// </summary>
@@ -644,15 +715,15 @@ public class PlayerController : MonoBehaviour
 
     public void UpdatePause(bool isPaused)
     {
-        if (isPaused && WorldController.isGamePaused)
+        if(isPaused && WorldController.isGamePaused)
         {
             freezePlayer = true;
-            Debug.Log("Player Paused");
+            Debug.Log("PlayerController: Player paused");
             return;
         }
 
         freezePlayer = false;
-        Debug.Log("Player Unpaused");
+        Debug.Log("PlayerController: Player unpaused");
     }
 
     public CameraController GetCameraController()

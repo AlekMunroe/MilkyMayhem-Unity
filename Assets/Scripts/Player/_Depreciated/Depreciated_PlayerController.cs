@@ -1,13 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Events;
 
 /// <summary>
-/// Using Unity's Input System and Rigidbody to move the player.
+/// Moves the player using a CharacterController and Unity's Input System.
 /// </summary>
-public class RBPlayerController : MonoBehaviour
+[DisallowMultipleComponent]
+[RequireComponent(typeof(CharacterController))]
+public class Depreciated_PlayerController : MonoBehaviour
 {
-     [Header("Movement")]
+    public static Depreciated_PlayerController Instance { get; private set; }
+    
+    [Header("Movement")]
     [SerializeField] private float speed = 6f;
     [SerializeField] private float gravity = -20f;
     [SerializeField] private float airAcceleration = 5f;
@@ -15,14 +18,12 @@ public class RBPlayerController : MonoBehaviour
 
     private Vector3 horizontalVelocity;
 
-    /*
     [Header("Sprinting")]
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float maxSprintStamina = 2f;
     [SerializeField] private float sprintDrainSpeed = 1f;
     [SerializeField] private float sprintRegenerationSpeed = 0.75f;
-    [SerializeField] private float sprintRegenerationDelay = 1f; 
-    */
+    [SerializeField] private float sprintRegenerationDelay = 1f;
 
     [Header("Parkour Jump")]
     [SerializeField] private float jumpHeight = 2.5f;
@@ -43,7 +44,6 @@ public class RBPlayerController : MonoBehaviour
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 1f;
     [SerializeField] private float wallSlideSpeed = 3f;
-    [SerializeField] private Transform wallCheckRadius;
 
     [Header("Wall Jump")]
     [SerializeField] private float wallJumpHeight = 2.5f;
@@ -64,9 +64,8 @@ public class RBPlayerController : MonoBehaviour
     [SerializeField] private Animation playerAnim;
     [SerializeField] private AnimationClip slideAnimClip;
     [SerializeField] private AnimationClip resetAnimClip; //Used to reset all animations to the default state
-
-    new private Rigidbody rigidbody;
-    new private CapsuleCollider collider;
+    
+    private CharacterController controller;
     private Vector3 velocity;
     private bool isGrounded;
 
@@ -77,7 +76,7 @@ public class RBPlayerController : MonoBehaviour
     private float coyoteTimer;
     private float jumpBufferTimer;
 
-    public bool isWallClinging;
+    private bool isWallClinging;
     private float wallClingTimer;
     private float wallReattachTimer;
     private Vector3 wallNormal;
@@ -90,23 +89,47 @@ public class RBPlayerController : MonoBehaviour
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private Vector3 slideDirection;
+
     private Vector3 normalVisualScale;
+
     private bool freezePlayer;
+    
+    /// <summary>
+    /// Get the current sprint stamina as a value between 0 and 1 for the UI
+    /// </summary>
+    public float SprintStaminaPercent => currentSprintStamina / maxSprintStamina;
 
     private void Awake()
     {
-        rigidbody = GetComponent<Rigidbody>();
-        collider = GetComponent<CapsuleCollider>();
+        // Setup instance
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("Duplicate PlayerController Instance destroyed");
+            
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        
+        controller = GetComponent<CharacterController>();
 
         currentMovementSpeed = speed;
-
-        normalControllerHeight = collider.height;
-        normalControllerCenter = collider.center;
+        currentSprintStamina = maxSprintStamina;
+        
+        normalControllerHeight = controller.height;
+        normalControllerCenter = controller.center;
+        
+        SetupAnimationClip(slideAnimClip, WrapMode.ClampForever);
+        SetupAnimationClip(resetAnimClip, WrapMode.ClampForever);
     }
-
+    
     void Start()
     {
-        
+        if (WorldController.Instance == null)
+        {
+            Debug.LogError("PlayerController: No WorldController found.");
+        }
     }
 
     private void Update()
@@ -132,17 +155,9 @@ public class RBPlayerController : MonoBehaviour
         { 
             HandleJumping(keyboard);
         }
-        //UpdateSprint(keyboard);
+        UpdateSprint(keyboard);
         UpdateGravity();
-        UpdateMovement();
-    }
-
-    ///<summary>
-    /// Check if the player is touching the ground
-    /// </summary>
-    private void UpdateGroundCheck()
-    {
-        isGrounded = Physics.CheckSphere(groundCheckRadius.position, groundDistance, groundMask);
+        Walk();
     }
 
     /// <summary>
@@ -178,7 +193,7 @@ public class RBPlayerController : MonoBehaviour
     /// <summary>
     /// Reads WASD using the Input System and moves the player
     /// </summary>
-    private void UpdateMovement()
+    private void Walk()
     {
         // Keyboard.current, replacing the legacy Input.GetAxis
         Keyboard keyboard = Keyboard.current;
@@ -219,7 +234,27 @@ public class RBPlayerController : MonoBehaviour
         // Stops diagonal movement from being faster than forward
         moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
-        Vector3 horizontalVelocity = moveDirection * currentMovementSpeed;
+        // Airborne movement
+        Vector3 targetHorizontalVelocity = moveDirection * currentMovementSpeed;
+
+        if (isGrounded)
+        {
+            // Ground movement, this responds immediately
+            horizontalVelocity = targetHorizontalVelocity;
+        }
+        else if (moveDirection.sqrMagnitude > 0.01f)
+        {
+            // Change the direction in the air gradually
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetHorizontalVelocity, airAcceleration * Time.deltaTime);
+        }
+        else
+        {
+            // Slowly lose momentum when WASD is not held
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, Vector3.zero, airDrag * Time.deltaTime);
+        }
+        
+        // Slowly remove all extra force from a wall jump
+        wallJumpVelocity = Vector3.MoveTowards(wallJumpVelocity, Vector3.zero, wallJumpVelocityDecay * Time.deltaTime);
 
         Vector3 horizontalMovement;
 
@@ -233,22 +268,26 @@ public class RBPlayerController : MonoBehaviour
             horizontalMovement = horizontalVelocity + wallJumpVelocity;
         }
 
-        if (!isWallClinging)
-        {
-            wallJumpVelocity = Vector3.zero;
-        }
-
-        Vector3 finalMovement = horizontalMovement;
+    Vector3 finalMovement = horizontalMovement;
         
         // Add jumping, gravity or the wall sliding
         finalMovement.y = velocity.y;
         
-        rigidbody.AddForce(finalMovement);
+        controller.Move(finalMovement * Time.deltaTime);
+    }
+
+    ///<summary>
+    /// Check if the player is touching the ground
+    /// </summary>
+    private void UpdateGroundCheck()
+    {
+        isGrounded = Physics.CheckSphere(groundCheckRadius.position, groundDistance, groundMask);
     }
 
     /// <summary>
     /// Update the coyote time, jump buffers and thw wall jump delays
     /// </summary>
+    /// <param name="keyboard"></param>
     private void UpdateJumpTimers(Keyboard keyboard)
     {
         if (isGrounded)
@@ -300,9 +339,7 @@ public class RBPlayerController : MonoBehaviour
             PerformWallJump();
         }
     }
-
     
-
     /// <summary>
     /// Do a normal jump with forward movement
     /// </summary>
@@ -310,6 +347,8 @@ public class RBPlayerController : MonoBehaviour
     {
         //Alek: Honestly, I dont understand how this calculation works. Reddit tells me it works, I tested it so yeah... :/
         velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+        wallJumpVelocity += transform.forward * forwardJumpBoost;
 
         coyoteTimer = 0f;
         jumpBufferTimer = 0f;
@@ -330,6 +369,45 @@ public class RBPlayerController : MonoBehaviour
         jumpBufferTimer = 0f;
     }
 
+    /// <summary>
+    /// Draining sprint stamina while sprinting and regenerate it if not sprinting
+    /// </summary>
+    /// <param name="keyboard"></param>
+    private void UpdateSprint(Keyboard keyboard)
+    {
+        bool shiftHeld = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
+
+        bool movementKeyHeld = keyboard.wKey.isPressed || keyboard.aKey.isPressed || keyboard.sKey.isPressed ||
+                               keyboard.dKey.isPressed;
+
+        bool canSprint = currentSprintStamina > 0f;
+
+        bool isSprinting = shiftHeld && movementKeyHeld && canSprint;
+        
+        if (isSprinting)
+        {
+            currentMovementSpeed = sprintSpeed;
+
+            currentSprintStamina -= sprintDrainSpeed * Time.deltaTime;
+
+            currentSprintStamina = Mathf.Max(currentSprintStamina, 0f);
+
+            sprintRegenTimer = sprintRegenerationDelay;
+        }
+        else
+        {
+            currentMovementSpeed = speed;
+            sprintRegenTimer -= Time.deltaTime;
+
+            if (sprintRegenTimer <= 0f)
+            {
+                currentSprintStamina += sprintRegenerationSpeed * Time.deltaTime;
+                
+                currentSprintStamina = Mathf.Min(currentSprintStamina, maxSprintStamina);
+            }
+        }
+    }
+    
     /// <summary>
     /// Check if the player in the air is touching a wall
     /// </summary>
@@ -369,10 +447,10 @@ public class RBPlayerController : MonoBehaviour
     /// <returns></returns>
     private bool TryFindWall(out RaycastHit wallHit)
     {
-        Vector3 rayOrigin = collider.bounds.center;
+        Vector3 rayOrigin = controller.bounds.center;
         
-        float rayDistance = collider.radius + wallCheckDistance;
-        
+        float rayDistance = controller.radius + wallCheckDistance;
+
         if (Physics.Raycast(rayOrigin, transform.forward, out wallHit, rayDistance, wallMask))
         {
             return true;
@@ -422,10 +500,11 @@ public class RBPlayerController : MonoBehaviour
             animationState.wrapMode = wrapMode;
         }
     }
-    
+
     /// <summary>
     /// Starts, updates and finish the actual sliding
     /// </summary>
+    /// <param name="keyboard"></param>
     private void UpdateSliding(Keyboard keyboard)
     {
         if (slideCooldownTimer > 0f)
@@ -466,9 +545,9 @@ public class RBPlayerController : MonoBehaviour
         // Shrink the height of the player and keep the bottom part to the floor
         float heightDifference = normalControllerHeight - slideHeight;
 
-        collider.height = slideHeight;
+        controller.height = slideHeight;
 
-        collider.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
+        controller.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
 
         // Visually lower the player's visual height
         playerCam.transform.position = new Vector3(playerCam.transform.position.x, playerCam.transform.position.y - camSlidingHeight, playerCam.transform.position.z);
@@ -484,8 +563,8 @@ public class RBPlayerController : MonoBehaviour
         isSliding = false;
         slideCooldownTimer = slideCooldown;
         
-        collider.height = normalControllerHeight;
-        collider.center = normalControllerCenter;
+        controller.height = normalControllerHeight;
+        controller.center = normalControllerCenter;
 
         playerCam.transform.position = new Vector3(playerCam.transform.position.x, playerCam.transform.position.y + camSlidingHeight, playerCam.transform.position.z);
 
@@ -535,7 +614,7 @@ public class RBPlayerController : MonoBehaviour
 
         return direction;
     }
-
+    
     /// <summary>
     /// Plays a Legacy Animation clip from its first frame.
     /// </summary>
@@ -561,5 +640,23 @@ public class RBPlayerController : MonoBehaviour
         animationState.wrapMode = wrapMode;
         
         playerAnim.Play(animationClip.name, PlayMode.StopAll);
+    }
+
+    public void UpdatePause(bool isPaused)
+    {
+        if (isPaused && WorldController.isGamePaused)
+        {
+            freezePlayer = true;
+            Debug.Log("Player Paused");
+            return;
+        }
+
+        freezePlayer = false;
+        Debug.Log("Player Unpaused");
+    }
+
+    public CameraController GetCameraController()
+    {
+        return GetComponent<CameraController>();
     }
 }

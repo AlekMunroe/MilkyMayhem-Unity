@@ -2,90 +2,150 @@
 
 Update this file when an issue is found, fixed or deliberately postponed.
 
-## Scenes and Builds
 
-### Development scene list is temporary
+## Rigidbody Player
 
-**Status:** Planned update
+### Sliding is deliberately disabled
 
-`DevMenu` and `MovementTest` are currently included in Build Settings for development builds. `DevMenu` loads first and has buttons to load into development scenes.
+**Status:** Postponed
 
-**Recommendation:** Replace the scene with a final menu when a Main Menu is built.
+The sliding code is still in `PlayerController` but `Perm_CanSlide` is disabled on the player prefab because sliding is currently unreliable and is not required for the prototype.
 
-### DevMenu depends on manually configured scene names
+**Next action:** Leave sliding disabled unless it becomes necessary which we will then fix. If we continue using sliding, test the collider height, camera movement, animations and the standing clearance before officially enabling it.
 
-**Status:** Prototype
+### Wall movement needs regression testing
 
-`Dev_MainMenu` warns when a scene is not in Build Settings, but menu buttons must still be configured with the correct scene names.
+**Status:** Testing required
 
-**Recommendation:** Update its scene list whenever development scenes change. Update the system when a real main menu is created.
+A frictionless Physics Material fixed the issue where standing next to a wall stopped normal walking. The Rigidbody conversion also changed jumping, wall clinging and wall jumping.
 
-## Input and Game State
+**Next action:** Test these features with floors, corners, slopes and differently shaped walls. Check and confirm that a normal jump next to a wall is not replaced by a wall cling and that a wall jump will move away from the wall.
 
-### Pause system is still a prototype
+### Rigidbody gravity differs between the prefab and runtime
 
-**Status:** Implemented with limitations
+**Status:** Configuration cleanup
 
-`WorldController` now controls the PlayerController, CameraController, cursor and pause menu. It does not change `Time.timeScale`, so future physics, animations, timers or gameplay scripts will continue running unless they are explicitly connected to the pause flow.
+The player prefab currently stores `Use Gravity` as enabled, while `PlayerController` disables built in gravity at runtime because it applies custom gravity.
 
-**Recommendation:** When adding throwing, delivery or timer systems, decide how each system behaves while paused and connect it through `WorldController`.
+**Next action:** Disable `Use Gravity` on the prefab and check other prefabs for similar issues.
 
-### Pause state is not reset explicitly
+### Movement values are provisional
+
+**Status:** Balancing required
+
+Acceleration, deceleration, air control, sprinting, jump forces, wall behaviour and custom gravity work but have not been balanced for the final environment.
+
+## Milk Throwing and Placement
+
+### Missing projectile references still need stronger handling
 
 **Status:** Open
 
-`isGamePaused` is static and does not reset when a scene starts. Going to a new scene while paused may leave the state out of place, the cursor and other controls may not work as intended.
+`MilkThrowing` depends on its projectile prefab and throw origin being assigned correctly. A broken prefab setup can prevent throwing or create a runtime error.
 
-**Recommendation:** Reset the pause state and any changed global state during scene startup or shutdown, then test pausing when changing scenes. A loading system may be required to confirm everything works before unloading and loading a new scene.
+**Next action:** Check required references during startup, disable the component when they are missing and log an error.
+
+### Projectile lifetime has two owners
+
+**Status:** Cleanup required
+
+Both the `MilkThrowing` and `MilkCrate` scripts can schedule the spawned crate for destruction. This makes the lifetime behaviour harder to trace and means a crate landed successfully can disappear later.
+
+**Next action:** Give `MilkCrate` ownership of its lifetime. Cancel or change its removal behaviour after a successful delivery.
+
+### Impact checks occur before ignored-collision filtering
+
+**Status:** Open
+
+`MilkCrate` can evaluate an impact as broken before a collision with the player, another projectile or a checkpoint should be ignored.
+
+**Next action:** Ignore some collisions before applying break or bounce logic.
+
+### Throw physics require balancing
+
+**Status:** Balancing required
+
+Throw strength, inherited player velocity, angular torque, bounce force, bounce count, safe landing speed and placement distance are prototype values. Current values work for testing but checks for the final world.
+
+## Checkpoints, Scoring and Round Completion
+
+### Final game-complete behaviour is not implemented
+
+**Status:** Not implemented
+
+`GameManager` finds the round's checkpoints, counts the successful deliveries, updates the score then raises `RoundCompleted` when no checkpoints are left. Its completion method currently only logs the result and invokes the event. It doeesnt stop the players movement, stop throwing, pause the round timer or show a results screen.
+
+**Next action:** Create the final round complete system and connect it to `GameManager.RoundCompleted`. The completion state should stop any further gameplay and show the final score and time without being treated as the pause menu.
+
+### Round timer and gameplay results UI are missing
+
+**Status:** Not implemented
+
+There is no round timer, delivery progress display, score display or end round results screen yet.
+
+### Checkpoint discovery only occurs at startup
+
+**Status:** Accepted for current prototype
+
+`GameManager` finds checkpoints under its container during `Start`. Checkpoints created later will not automatically be included in the round total.
+
+### Development visual null handling is incomplete
+
+**Status:** Open
+
+`MilkCheckpoint` warns when its development visual is missing, but one startup path can still try to disable that object without a null check.
+
+### Checkpoint feedback is provisional
+
+**Status:** Prototype
+
+Success and failure visuals and audio work, a failed delivery can be retried. The current assets are development feedback and will be replaced by final effects, audio and UI.
+
+## Pause and Input
 
 ### WorldController assumes required references exist
 
 **Status:** Open
 
-`WorldController.Start` assumes that `PlayerController.Instance` and its CameraController exist. `Update` assumes a keyboard exists, and the pause flow assumes `Pause Menu UI` has been assigned. Missing requirements may produce a `NullReferenceException` error.
+`WorldController` expects an active `PlayerController`, its `CameraController`, the pause menu object and a keyboard. An incorrect scene setup might produce missing reference errors.
 
-**Recommendation:** Confirm the player, camera, keyboard and pause-menu references before using them. Disable the affected behaviour and log a clear error when a reference is unavailable.
-
-### Pause API contains unfinished helpers
-
-**Status:** Prototype cleanup
-
-The current public pause entry point is `UpdatePause()`, which toggles state. Separate `PauseGame`, `ResumeGame` and `TogglePause` methods have not been created. `TogglePauseMenu` is empty, while `SetGameSpeed` and `ResetGameSpeed` are currently unused.
-
-**Recommendation:** Remove the unused helpers or complete and rename the pause API before more gameplay systems depend on it.
-
-### Direct device input
-
-**Status:** Accepted for prototype
-
-Scripts read `Keyboard.current` and `Mouse.current` directly. This is simple but makes rebinding, controller support and automated input testing harder.
-
-The development input visualiser assumes a keyboard is connected and does not have any checks. This is acceptable for a development side setup but may require a patch if other devices are unsupported.
-
-## Midair Movement
+### Static pause state needs scene-change testing
 
 **Status:** Open
 
-Current implementation of `PlayerController` does not update midair momentum when wall jumping, resulting in the player continuing moving towards the wall after a wall jump. Should not be intended behaviour and if left untouched would result in other external player movements not affect the final player momentum.
+The pause state is static and `WorldController` changes `Time.timeScale`. Scene changes while paused should be tested to make sure when the next scene starts unpaused, at normal speed and with the correct cursor state.
 
-**Recommendation:** Update the player midair momentum when other sources of movement affect the player.
+### Direct device input limits future input support
+
+**Status:** Accepted for prototype
+
+The gameplay scripts currently read `Keyboard.current` and `Mouse.current` directly. This is suitable for the keyboard and mouse prototype but makes input rebinding and controller support more difficult.
 
 ## UI
 
-### PlayerUIController does not automatically locate the player
+### PlayerUIController still uses a scene reference
 
-**Status:** Planned
+**Status:** Planned improvement
 
-`PlayerUIController` now checks PlayerController and Slider references and disables itself if either is missing. It still requires the PlayerController reference to be assigned manually in each scene.
+`PlayerUIController` uses the correct Rigidbody `PlayerController` API, but the player reference must still be assigned in every scene.
 
-**Recommendation:** Either locate the player once when the UI starts or provide the reference through the future player spawning or world state system. Do not search every frame.
+**Next action:** Have the player reference from a future spawning or scene initialisation system, or find it once during startup. Do not search every frame.
 
-## Balancing and Testing
+### Delivery UI is not implemented
 
-- Movement, jump, wall and slide values need structured playtesting.
-- Air acceleration and air drag have been added but still require playtesting in the final environment.
-- The scene stores some values that differ from script defaults, including sprint stamina and wall-cling time.
-- Wall clinging activates automatically when the airborne player is close enough to a Wall-layer surface.
+**Status:** Not implemented
+
+The sprint slider works, but the player cant yet see their score, remaining deliveries, round time or final result in the gameplay UI.
+
+## Deprecated and Postponed Work
+
+- The old CharacterController player prefab and script are found under `_Depreciated` folders and must not be used for any scenes.
+- The empty `EventHandler` placeholder is also found under `_Depreciated` and is not part of any system as it is blank.
+- Sliding is postponed rather than deprecated because its code is still part of the active player.
+
+## Scenes and Builds
+
+- `DevMenu` and `MovementTest` remain development scenes and must be replaced from the final build.
+- The `Assets` folder still require organisation.
+- The final playable scenes, environment testing, hazards and production models are not complete.
 - No automated gameplay tests currently exist.
-- Delivery gameplay, scoring, timer and hazards are not implemented.
-

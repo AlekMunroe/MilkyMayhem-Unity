@@ -2,14 +2,14 @@
 
 ## Purpose
 
-This guide describes the current code structure and the responsibilities of each system. Read [PlayerSetup.md](PlayerSetup.md) before rebuilding or changing the player hierarchy.
+This guide explains what each current script does and how the main systems connect together. Read [PlayerSetup.md](PlayerSetup.md) before changing or rebuilding the player prefab.
 
 ## Current Architecture
 
 ```text
 Keyboard and mouse
         |
-        +--> PlayerController ------> CharacterController (movement)
+        +--> PlayerController ------> Rigidbody movement and parkour
         |          |
         |          +---------------> SprintStaminaPercent
         |                                  |
@@ -17,45 +17,47 @@ Keyboard and mouse
         |                           PlayerUIController
         |                                  |
         |                                  v
-        |                              UI Slider
+        |                            Sprint UI Slider
         |
         +--> CameraController ------> Player yaw and camera pitch
         |
-        +--> WorldController -------> Pause state and cursor control
+        +--> MilkThrowing ----------> Thrown or placed MilkCrate
+        |                                  |
+        |                                  v
+        |                           MilkCheckpoint
+        |                                  |
+        |                                  v
+        |                             GameManager
+        |                      Score, progress and round event
+        |
+        +--> WorldController -------> Pause state, time scale and cursor
                     |
-                    +---------------> PlayerController (freeze input updates)
-                    +---------------> CameraController (enable or disable)
-                    +---------------> Pause menu (show or hide)
-
-PauseMenuController --------------> Resume or return to the development menu
+                    +---------------> PlayerController
+                    +---------------> CameraController
+                    +---------------> Pause menu
 ```
 
-The current scripts read devices directly through `Keyboard.current` and `Mouse.current`. There is no Input Actions asset or central input wrapper yet however, this is to be implemented in the future.
+The scripts currently read `Keyboard.current` and `Mouse.current` directly. We do not have an Input Actions asset or input rebinding system yet.
 
 ## PlayerController
 
 **Path:** `Assets/Scripts/Player/PlayerController.cs`
 
-**Responsibility:** Controls the entire first person player with movement and animation
+**Responsibility:** Controls the first person Rigidbody player and its parkour movement.
 
-Implemented features:
+Current features:
 
-- WASD movement through a `CharacterController`
-- Sprinting with stamina drain, a regeneration delay and regeneration over time
-- Parkour jump with a slight forward boost
-- Coyote time (a short time for the player to jump after leaving the platform), jump buffering and variable jump height
-- Wall detection on all four sides
-- Temporary wall clinging, wall sliding and wall jumping
-- Ground sliding with a reduced controller height
-- Camera lowering during a slide using `camSlidingHeight`
-- Legacy slide and reset animation playback
-- A PlayerController instance used by `WorldController`
-- Airborne momentum with configurable acceleration and drag
-- Sprint movement while in the air
-- Ground and coyote time jumps taking priority near walls
-- A pause function in the `WorldController` script which freezes player updates
+- Rigidbody movement during the physics update
+- Ground acceleration, deceleration and a maximum speed
+- Air acceleration, air drag and retained momentum
+- Sprinting with stamina drain and regeneration
+- A forward parkour jump boost
+- Coyote time, jump buffering and variable jump height
+- Wall detection, temporary wall clinging, wall sliding and wall jumping
+- Pause support through `WorldController`
+- Permanent controls which can disable incomplete features
 
-Important public API:
+Important public parts:
 
 ```csharp
 public static PlayerController Instance
@@ -64,133 +66,181 @@ public void UpdatePause(bool isPaused)
 public CameraController GetCameraController()
 ```
 
-This value is normalized between 0 and 1 and is currently used by the `PlayerUIController`.
+The script requires:
 
-Important dependencies:
-
-- `CharacterController` on the same GameObject
+- A `Rigidbody` and `CapsuleCollider` on the same GameObject
+- The frictionless player Physics Material on the CapsuleCollider
 - A `GroundCheck` child Transform
-- Ground and Wall layer masks
-- A camera GameObject assigned to `Player Cam`
-- A Legacy `Animation` component
-- Legacy slide and reset clips
+- The Ground and Wall layer masks
+- A `CameraController` on the player
+
+The old CharacterController version is depreciated. New scripts must use the current Rigidbody `PlayerController` and should not require a `CharacterController`.
+
+Sliding code is still inside this script but `Perm Can Slide` is disabled on the prefab. Sliding is postponed because it is unreliable and not currently required.
 
 ## CameraController
 
 **Path:** `Assets/Scripts/Player/CameraController.cs`
 
-**Responsibility:** To rotate the player object horizontally and the camera object vertically.
+**Responsibility:** Rotates the player horizontally and the camera vertically.
 
-Required reference:
-
-- `Cam Object`: A parent object inside the main player object with a camera component.
-```text 
-Player object (PlayerController.cs)
-|
-V
-Camera object
-|
-V
-Camera (CameraController.cs, camera component)
-```
-
-The vertical angle is clamped using `Max Look Angle` to limit how far the player can look without acting "unnatural".
-
-The cursor locking and pausing are not manage by the `CameraController`. The `WorldController` disables the entire component while the game is paused and enables it again when gameplay is resumed.
+`Cam Object` should use `CamPos`, with `Main Camera` placed underneath it. `WorldController` disables the component while the game is paused. The `WorldController` also controls the cursor rather than the `CameraController`.
 
 ## PlayerUIController
 
 **Path:** `Assets/Scripts/UI/Gameplay/PlayerUIController.cs`
 
-**Responsibility:** Update the player related UI elements.
+**Responsibility:** Updates UI connected to the player.
 
-It currently reads `PlayerController.SprintStaminaPercent` each frame and assigns it to the sprint `Slider` value.
+It currently reads `PlayerController.SprintStaminaPercent` and uses it to update the sprint Slider. It checks its references and makes the Slider non interactable. The player reference must still be assigned in each scene.
 
-Required references:
-
-- `Player Controller`: the scene's `PlayerController`
-- `Sprint Slider`: the UI Slider used to display stamina
-
-Future player HUD elements such as health or interaction prompts can be added here. Pause menus, settings and end-of-round screens should use separate UI controllers.
-
-`PlayerUIController` now validates both references in `Awake`, disables itself when a necessary reference is missing and makes the sprint slider non-interactable automatically. It does not locate the player automatically yet. This is a future development.
+The score, remaining deliveries and timer can be added to the gameplay UI later. The pause menu and final results screen should remain as separate UI controllers.
 
 ## WorldController
 
 **Path:** `Assets/Scripts/World/WorldController.cs`
 
-**Responsibility:** Owns all gameplay states and updates controls for worldwide events such as pause states.
+**Responsibility:** Controls worldwide states such as pausing the game.
 
-Current behaviour:
+It currently:
 
-- Provides a scene-level `WorldController.Instance`.
-- Listens for the Escape key using Unity's Input System.
-- Holds the pause state in `isGamePaused`.
-- Locks and hides the cursor when the game is active.
-- Unlocks and shows the cursor when the game is paused.
-- Calls `PlayerController.UpdatePause` to freeze or resume the player's updates such as movement and gravity.
-- Disables `CameraController` while the game is paused and enables it when the game resumes.
-- Toggles the pause menu UI GameObject.
+- Provides `WorldController.Instance`
+- Detects the Escape key and pauses or resumes the game
+- Stores the pause state in `isGamePaused`
+- Sets `Time.timeScale` to `0` while paused and back to normal when resumed
+- Locks and hides the cursor during gameplay
+- Unlocks and shows the cursor while paused
+- Tells `PlayerController` when to stop or resume
+- Disables or enables `CameraController`
+- Shows or hides the pause menu
 
-The controller currently coordinates these systems directly rather than broadcasting a pause event. New gameplay systems that accept input must therefore be connected to the pause flow deliberately.
+Any new system which reads player input must also check the pause state. `MilkThrowing` already blocks its input while paused, while the cursor is unlocked or while UI is being used.
 
-The private `SetGameSpeed` and `ResetGameSpeed` helpers exist but are not currently used by pausing. The current pause implementation does not change `Time.timeScale`.
+## MilkThrowing
+
+**Path:** `Assets/Scripts/Throwable/MilkThrowing.cs`
+
+**Responsibility:** Creates thrown or placed milk crates from the player's camera direction.
+
+The component is under `Main Camera` on the player's `ThrowOrigin` object.
+
+- Left mouse throws a crate.
+- Right mouse places a crate.
+- A thrown crate can inherit some of the player's Rigidbody velocity.
+- Thrown crates use an impulse and random torque.
+- Placed crates have their controlled bouncing disabled.
+- New crates ignore collisions with the player and other spawned crates.
+- Throwing is blocked while paused or while UI is being used.
+
+The throw and placement settings currently work for testing but still need balancing in the final world.
+
+## MilkCrate
+
+**Path:** `Assets/Scripts/Throwable/MilkCrate.cs`
+
+**Responsibility:** Controls the physics and delivery state of each milk crate.
+
+It currently includes:
+
+- A limited number of controlled bounces
+- A bounce cooldown
+- Reflected velocity when it hits a valid surface
+- Impact speed checks which can break the milk
+- A maximum lifetime
+- Separate broken and landed states
+- A function which disables bouncing for placed crates
+- A function which allows a checkpoint to stop and position the crate
+
+Scoring should not be added to `MilkCrate`. This script only stores the condition of the crate. `MilkCheckpoint` decides if the delivery was successful.
+
+## MilkCheckpoint
+
+**Path:** `Assets/Scripts/Throwable/MilkCheckpoint.cs`
+
+**Responsibility:** Checks a milk delivery and shows success or failure feedback.
+
+It currently:
+
+- Finds a `MilkCrate` from its collider or parent object
+- Fails milk which is broken or moving above the safe delivery speed
+- Shows failure feedback without clearing the checkpoint
+- Allows the player to retry as many times as required
+- Stops and moves successful milk onto the landing point
+- Replaces failure feedback with success feedback
+- Plays success or failure audio
+- Prevents the checkpoint from completing more than once
+- Sends the successful delivery and score amount to `GameManager`
+
+The checkpoint Collider must have `Is Trigger` enabled. The success visual, failed visual, AudioSource, audio clips and landing point should all be assigned on its prefab.
+
+## GameManager
+
+**Path:** `Assets/Scripts/World/GameManager.cs`
+
+**Responsibility:** Tracks checkpoint progress and the score for the current round.
+
+Important public parts:
+
+```csharp
+public static GameManager Instance
+public int Score
+public int TotalCheckpoints
+public int RemainingCheckpoints
+public event Action<int> ScoreChanged
+public event Action<int, int> CheckpointProgressChanged
+public event Action RoundCompleted
+public bool RegisterCheckpointCleared(MilkCheckpoint checkpoint, int scoreAmount)
+```
+
+When the scene starts, `GameManager` finds every checkpoint under its assigned checkpoint container. Each checkpoint can only report one successful delivery. When there are no checkpoints remaining, it raises `RoundCompleted`.
+
+### Game Completion is Incomplete
+
+The `RoundCompleted` event exists but the actual game complete system has not been made yet. Completing every checkpoint currently does not stop the player, stop throwing, stop a timer or show the results screen. A future game complete or results system should listen to this event and perform these actions.
 
 ## PauseMenuController
 
 **Path:** `Assets/Scripts/UI/Menus/PauseMenuController.cs`
 
-**Responsibility:** Handles buttons part of the pause menu.
+**Responsibility:** Controls the pause menu buttons.
 
-It can resume the game through the `WorldController`, show or hide the return confirmation panel and load the configured main menu scene index. In `MovementTest`, index `0` currently returns to the development menu and should be the default menu for the final main menu.
+It resumes the game through `WorldController`, shows or hides the return confirmation and loads the selected menu scene. It currently returns to the development menu. This will need changing when a final main menu exists.
 
-## Dev Main Menu
+## Development Tools
+
+### Development Main Menu
 
 **Path:** `Assets/Scripts/_Dev/Dev_MainMenu.cs`
 
-**Responsibility:** Provides a temporary entry point for development builds.
+This is the temporary menu used to open development scenes. It is not the final main menu.
 
-`DevMenu` is the first scene in Build Settings. `Dev_MainMenu` it checks if the scene names exist and logs a warning when one does not exist. Its public `LoadScene` method is used by menu buttons to load into development scenes.
-
-This is a development only system. When a real main menu exists, the development scene list and startup behaviour must be changed and hidden to public non development builds.
-
-## Development Input Visualiser
+### Input Visualiser
 
 **Path:** `Assets/Scripts/_Dev/Dev_ShowKeysOnScreen.cs`
 
 **Prefab:** `Assets/Prefabs/_Dev/Dev_InputVisualiser.prefab`
 
-**Responsibility:** Visualises keyboard inputs on screen during development testing and recording demonstrations.
+This shows keyboard and mouse button inputs while testing or recording development footage. It is only a development tool and should not be part of the final UI.
 
-This is a development-only tool and should not be included in the final player-facing UI.
+## Depreciated Systems
 
-## Legacy Animation Flow
+These files are kept for reference but are not part of the current systems:
 
-`PlayerController` registers both slide and reset clips with the assigned Legacy `Animation` component.
+- `Assets/Prefabs/_Depreciated/Player.prefab`: the old CharacterController player
+- `Assets/Scripts/Player/_Depreciated/Depreciated_PlayerController.cs`: the old player movement script
+- `Assets/Scripts/World/_Depreciated/EventHandler.cs`: an unused and empty placeholder
 
-1. Sliding begins and the slide clip plays with `WrapMode.ClampForever`.
-2. The clip plays once and holds its final frame to simulate sliding.
-3. Sliding finishes and the reset clip plays.
-4. The reset clip holds its final default pose.
+Do not use these files in new scripts or scenes. They should remain until the group confirms they are no longer needed by another branch or scene.
 
-All clips must be marked as Legacy. They must all be attached to an Animation component of each object in the hierarchy.
+## Adding a Gameplay System
 
+When adding a new system:
 
-The reusable methods are:
-
-```csharp
-SetupAnimationClip(AnimationClip animationClip, WrapMode wrapMode)
-PlayAnimation(AnimationClip animationClip, WrapMode wrapMode)
-```
-
-## Adding a New Gameplay System
-
-When adding a system:
-
-1. Give the script one clear responsibility.
-2. Inspector references are preferred.
-3. Document all required components in the relevant files linked from the [Read Me](../README.md).
-4. Add XML documentation to public classes, methods and properties.
-5. Test the feature in `MovementTest` or a dedicated test scene.
-6. Update this guide, [KnownIssues.md](KnownIssues.md) and [DevelopmentLog.md](DevelopmentLog.md).
-7. Record all your progress.
+1. Give the script one clear purpose.
+2. Use the current Rigidbody player and do not add new CharacterController requirements.
+3. Check any required Inspector references before using them.
+4. Decide what the system should do when the game is paused.
+5. Add XML comments to public classes, methods, properties and events.
+6. Test it in `MovementTest` or another dedicated test scene.
+7. Update this guide, [KnownIssues.md](KnownIssues.md) and [DevelopmentLog.md](DevelopmentLog.md).
+8. Record screenshots, videos, commits and test feedback as evidence.

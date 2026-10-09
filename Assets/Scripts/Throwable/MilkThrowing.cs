@@ -1,37 +1,61 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
+[DisallowMultipleComponent]
 public class MilkThrowing : MonoBehaviour
 {
-    [Header("Settings")]
-    [SerializeField] private float throwStrength = 500f;
-    [SerializeField] private float playerVelocityMultiplier = 25f;
-    [SerializeField] private float throwMaxCooldown = 2f;
-    [SerializeField] private Vector3 projectileSpawnPointOffset = new Vector3(0, 0, 0);
+    [Header("Throwing")]
+    [SerializeField, Min(0f)] private float throwStrength = 12f;
+    [SerializeField, Min(0f)] private float playerVelocityMultiplier = 1f;
+    [SerializeField, Min(0f)] private float throwMaxCooldown = 0.5f;
+    [SerializeField, Min(0f)] private float projectileLifetime = 10f;
 
-    [Header("Randomness Settings")]
-    [SerializeField] private float randomRange = 5f;
+    [Tooltip("The local position in front of the camera where the milk is created")]
+    [SerializeField] private Vector3 projectileSpawnPointOffset = new Vector3(0f, -0.15f, 1f);
+
+    [Header("Randomness")]
+    [SerializeField, Min(0f)] private float randomTorqueStrength = 1f;
     
-    [Header("Projectile Object")]
+    [Header("Projectile")]
+    [Tooltip("Assign the Rigidbody from the MilkCrate prefab")]
     [SerializeField] private Rigidbody projectilePrefab;
 
-    [Header("Player Object")]
-    [SerializeField] private GameObject playerObject;
+    [Header("Player")]
+    [Tooltip("Optional: The script will search its parents then create PlayerController.Instance")]
+    [SerializeField] private PlayerController playerController;
 
-    private Vector3 projectileSpawnPoint;
+    private Rigidbody playerRigidbody;
+    private Collider[] playerColliders;
     private float throwCooldown;
-    private Vector3 playerVelocity;
-    private CharacterController playerController;
 
 
-    private void Awake()
+    private void Start()
     {
-        //References the player object's CharacterController component.
-        if (playerObject == null)
+        if(playerController == null)
         {
-            playerObject = GameObject.FindGameObjectWithTag("Player");
+            playerController = PlayerController.Instance;
         }
-        playerController = playerObject.GetComponent<CharacterController>();
+
+        if(playerController == null)
+        {
+            Debug.LogError("MilkThrowing: No PlayerController could be found.");
+            
+            enabled = false;
+            return;
+        }
+
+        playerRigidbody = playerController.GetComponent<Rigidbody>();
+
+        if(playerRigidbody == null)
+        {
+            Debug.LogError("MilkThrowing: The player doesnt have a Rigidbody");
+
+            enabled = false;
+            return;
+        }
+
+        playerColliders = playerController.GetComponentsInChildren<Collider>();
     }
 
     private void Update()
@@ -42,24 +66,47 @@ public class MilkThrowing : MonoBehaviour
         {
             return;
         }
+
         UpdateThrowing(mouse);
     }
 
     /// <summary>
-    /// Update logic for checking if the player is attempting to throw the milk projectile. Also manages the cooldown timer for throwing.
+    /// Checks for input and updates the cooldown
     /// </summary>
+    /// <param name="mouse">The current mouse input</param>
     private void UpdateThrowing(Mouse mouse)
     {
-        bool throwPressed = mouse.leftButton.wasPressedThisFrame;
-        if (throwCooldown > 0)
+        if(throwCooldown > 0f)
         {
             throwCooldown -= Time.deltaTime;
         }
-        
-        //Temporary fix for throwing while paused. Will be replaced with a proper event system later.
-        if (throwPressed && throwCooldown <= 0 && Time.timeScale > 0)
+
+        // Dont allow throwing if the game is paused or the cursor is unlocked for a menu
+        if (WorldController.isGamePaused || (Cursor.lockState != CursorLockMode.Locked))
+        {
+            return;
+        }
+
+        // Dont allow clicks on visible UI
+        bool pointOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        if(Cursor.visible && pointOverUI)
+        {
+            return;
+        }
+
+        if (throwCooldown > 0f)
+        {
+            return;
+        }
+
+        if (mouse.leftButton.wasPressedThisFrame && throwCooldown <= 0f)
         {
             ThrowMilk();
+        }
+        else if (mouse.rightButton.wasPressedThisFrame)
+        {
+            PlaceMilk();
         }
     }
 
@@ -68,20 +115,81 @@ public class MilkThrowing : MonoBehaviour
     /// </summary>
     private void ThrowMilk()
     {
-        Vector3 projectileFinalOffset = transform.forward * projectileSpawnPointOffset.z + transform.up * projectileSpawnPointOffset.y + transform.right * projectileSpawnPointOffset.x;
-        projectileSpawnPoint = transform.position + projectileFinalOffset;
-        Quaternion projectileRotation = Random.rotation;
-        float randomRotation = Random.Range(-randomRange,randomRange);
+        // Convert the local offset into a world position
+        Vector3 projectileSpawnPoint = transform.TransformPoint(projectileSpawnPointOffset);
 
-        //Reads the velocity returned by the CharacterController.
-        playerVelocity = playerController.velocity;
-        Debug.Log(playerVelocity);
+        // Match the projectiles start rotation to the camera
+        Quaternion projectileRotation = transform.rotation;
 
         Rigidbody spawnedProjectile = Instantiate(projectilePrefab, projectileSpawnPoint, projectileRotation);
 
-        spawnedProjectile.AddForce(transform.forward * throwStrength + playerVelocity * playerVelocityMultiplier);
-        spawnedProjectile.AddTorque(randomRange,randomRange,randomRange);
+        IgnorePlayerCollisions(spawnedProjectile);
+
+        // Carry some players movement into the throw
+        spawnedProjectile.linearVelocity = playerRigidbody.linearVelocity * playerVelocityMultiplier;
+
+        // Apply a single throw impulse
+        spawnedProjectile.AddForce(transform.forward * throwStrength, ForceMode.Impulse);
+
+        // Add random rotation
+        Vector3 randomTorque = Random.insideUnitSphere * randomTorqueStrength;
+
+        spawnedProjectile.AddTorque(randomTorque, ForceMode.Impulse);
+
+        // Remove the missed projectiles after its time has expired
+        Destroy(spawnedProjectile.gameObject, projectileLifetime);
 
         throwCooldown = throwMaxCooldown;
+    }
+
+    /// <summary>
+    /// Places a milk in front of the player without throwing it
+    /// </summary>
+    private void PlaceMilk()
+    {
+        Vector3 projectileSpawnPoint = transform.TransformPoint(projectileSpawnPointOffset);
+
+        Quaternion projectileRotation = transform.rotation;
+
+        Rigidbody placedProjectile = Instantiate(projectilePrefab, projectileSpawnPoint, projectileRotation);
+
+        IgnorePlayerCollisions(placedProjectile);
+
+        // No rotation or movement
+        placedProjectile.linearVelocity = Vector3.zero;
+        placedProjectile.angularVelocity = Vector3.zero;
+
+        MilkCrate milkCrate = placedProjectile.GetComponent<MilkCrate>();
+
+        if (milkCrate != null)
+        {
+            milkCrate.DisableBouncing();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "MilkThrowing: The placed projectile has no MilkCrate component.");
+        }
+
+        Destroy(placedProjectile.gameObject, projectileLifetime);
+
+        throwCooldown = throwMaxCooldown;
+    }
+
+    /// <summary>
+    /// Stops a new projectile from colliding with the player
+    /// </summary>
+    /// <param name="spawnedProjectile">The rigidbody that belongs to the projectile</param>
+    private void IgnorePlayerCollisions(Rigidbody spawnedProjectile)
+    {
+        Collider[] projectileColliders = spawnedProjectile.GetComponentsInChildren<Collider>();
+
+        foreach(Collider projectileCollider in projectileColliders)
+        {
+            foreach(Collider playerCollider in playerColliders)
+            {
+                Physics.IgnoreCollision(projectileCollider, playerCollider);
+            }
+        }
     }
 }

@@ -125,6 +125,124 @@ This is a working record of development decisions and progress. It can later be 
 - Finalise and Polish milk thowing mechanic and milk projectile.
 - Implement proper delivery zone logic and gameplaye events.
 
+
+## 09 October 2026 Rigidbody Player and Delivery Prototype
+
+### Aim
+
+Assess the experimental Rigidbody branch and implement that and milk throwing into the main branch.
+
+### Rigidbody PlayerController
+
+- Reviewed the experimental Rigidbody controller and tested it's movements, physics and integration problems before updating it.
+- Replaced the experimental RBPlayerController name with the active PlayerController name to make integration easier and help handle compatibility.
+- Moved input collection into `Update` and Rigidbody movement into `FixedUpdate`
+- Replaced the continuous force accumulation which was controlled with `Rigidbody.linearVelocity`, ground acceleration, ground decleration, air acceleration and air drag.
+- Disabled the Rigidbody's gravity at runtime to allow for a custom gravity calculation.
+- Updated jumping, jump release, wall clinging, wall sliding and wall jumping to use the Rigidbody's velocity.
+- Restored the sprinting and regeneration along with `SprintStaminaPercent` for hte UI.
+- Restored the forward parkour jump boost.
+- Restored the `PlayerController.Instance`, `UpdatePause` and `GetCameraController` APIs used by the WorldController and the UI.
+- Added a perminant feature switches. Useful for unstable systems.
+- Added `Player_NoFriction` physics material to the player to allow the player to walk against walls without friction.
+- Added the Rigidbody and CapsuleCollider component attributes to the `PlayerController`.
+
+### Player and Scene Integration
+
+- Replaced the Rigidbody player prefab name with `Player`
+- Seperated the old CharacterController prefab and its scripts into `_Depreciated` folders so they can be found yet not used.
+- Kept `WorldController` Connected to the new `PlayerController` singleton for pausing and finding the camera.
+- Updated the development input visualiser to display the left and right mouse buttons.
+
+### Milk Throwing and Placement
+
+- Reworked `milkThrowing` to use the new Rigidbody `PlayerController` rather than `CharacterController.velocity`.
+- Created a `ThrowOrigin` at the camera so milk will follow the camera's pitch.
+- Added left click throwing using `ForceMode.Impulse`.
+- Added right click milk placement which will place milk without movement, torque or bouncing.
+- Added inherited player velocity, configurable throw strength, cooldown, spawn offset, random torque and projectile lifetime.
+- Stopped spawned milk colliders from colliding with the player.
+- Blocked throwing while the game is paused or while the cursor is unlocked.
+- Refused random torque to `1` and set the MilkCrate Rigidbody angular damping to `1.5`.
+
+### MilkCrate Physics and State
+
+- Added a set bounce count, cooldown and kept it retaining linear velocity and a minimum bounce speed.
+- Added a bounce surface LayerMask and seperate handling for playets, projectiles, checkpoints and normal surfaces.
+- Prevented bounce counts fromo becoming a negative or contiuously repeating its count by one collision.
+- Added a Rigidbody and Collider attribute and removed the unused components.
+- Added a maximum lifetime cleanup for missed projectiles.
+- Added `IsBroken` and `IsLanded`, current speed reporting, impact break detection and checkpoint landing support.
+- Added`DisableBouncing` for milk which is placed.
+
+### MilkCheckpoint and GameManager
+
+- Replaced tag only projectile detection with `GetComponentInParent<MilkCrate>` so that child colliders are supported.
+- Added a configurable safe delivery speed and score value.
+- Added a `LandingPoint` that stops milk when it successfully lands, clears its velocity, makes it kinematic and aligns it to the checkport.
+- Added failiure option which allows for retries.
+- Added seperate success and fail visuals, sounds and a development only checkport representation.
+- Added `CheckpointFeedbackVisualSpinner` for a visible prototype feedback.
+- Updated `GameManager` to find all `MilkCheckpoint` components under a specified container.
+- Added total checkpoint count, remaining checkpoint count, score tracking and duplicate completion protection.
+- Added score, checkpoint progress and round complete events.
+- Removed the duplicate scene `GameManager`.
+- Enabled `Is Trigget` on the Checkpoint prefab.
+
+### Deprecated Work
+
+The following remains in the repository for references but is no longer used as part of the active prototype:
+
+- `Assets/Prefabs/_Depreciated/Player.prefab`: the previous CharacterController player.
+- `Assets/Scripts/Player/_Depreciated/Depreciated_PlayerController.cs`: the previous CharacterController movement implementation.
+- `Assets/Scripts/World/_Depreciated/EventHandler.cs`: an unused empty placeholder from the experimental branch.
+- The `RBPlayerController` filename and class name were replaced by the current Rigidbody based `PlayerController`.
+- Sliding is not removed, but its feature is disabled because the Rigidbody version is currently unreliable.
+
+### Testing Completed
+
+- Confirmed the Rigidbody player can walk without continuing acceleration.
+- Confirmed the frictionless player materal stops the player "sticking" to walls.
+- Confirmed jumping, sprinting and camera movement all work after the conversion.
+- Confirmed that milk will follow the cameras pitch when its thrown from `ThrowOrigin`.
+- Confirmed left click throws and right click places milk.
+- Confirmed that placed milk disabled the bouncing.
+- Tuned initial torque and angular damping to reduce accessive spinning.
+- Confirmed that failed deliveries can be attempted again with a new crate.
+- Confirmed that successful deliveries will replace failure feedback.
+
+### Not Yet Implemented
+
+- `GameManager.CompleteRound` doesnt stop gameplay, pause the timer or disable the players input. It currently logs completiona and only invokes `RoundCompleted`.
+- The round timer has not been implemented.
+- A player facing score, remaining deliveries and end of round UI has not been implemented.
+- Final score results for broken, misplaced or late milk have not been agreed on yet.
+- Hazards and final delivery content have not been implemented.
+- Final movement, throw, bounce and impact values have not been properly tested in the final environment.
+
+### Known Bugs and Limitations
+
+- Sliding is disabled because the Rigidbody behaviour is unstable.
+- Wall clinging and wall jumping require complete testing with the new Rigidbody player.
+- `MilkThrowing` doesnt disable itself safety when `Projectile Prefab` is missing.
+- A successfully landed crate is still destroyed after its lifetime expires.
+- `MilkCrate` checks breaking impact before ignoring the player so it may still collide unexpectedly and might still mark milk as broken.
+- `MilkCheckpoint.Start` can still access a missing dev visual in a retail build.
+- Checkpoints which are added outside the container, or added after `GameManager.Start` cannot be counted automatically.
+- Controller scripts will still assume multiple scene references exist and need null checks.
+- The project only supports keyboard and mouse directly and does not support rebinding or controllers.
+
+### Next Steps
+
+- Implement an actual game completion system and the round timer.
+- Add score, checkpoint progress, timer and results UI.
+- Test multiple checkpoints to completion.
+- Choose one owner for projectile lifetime and decide if delivered milk will continue to be visible.
+- Complete the missing reference safety checks.
+- Re test and balance the Rigidbody player and delivery physics int he greybox environment.
+
+--END UPDATE--
+
 ## Entry Template
 
 ### Date and Feature

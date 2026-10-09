@@ -1,140 +1,145 @@
 # Player Setup
 
-## Recommended Hierarchy
+## Active Player Prefab
 
-The player is stored in `Assets/Prefabs/Player.prefab`. Edit shared player behaviour in Prefab Mode so every scene updates the player.
+The active Rigidbody player is stored in `Assets/Prefabs/Player.prefab`. Make any changes in Prefab Mode so every scene receives the same setup.
+
+The old CharacterController player is deprecated and stored in `Assets/Prefabs/_Depreciated/Player.prefab`. Do not use it in any scenes and do not delete it until the group has reviewed the migration.
+
+## Current Hierarchy
 
 ```text
 Player
-├── Main Camera
-│   ├── CharacterObjects
-│   │   ├── L-Leg
-│   │   └── R-Leg
-│   └── CamPos
-└── GroundCheck
+├── CharacterObjects
+│   ├── L-Leg
+│   └── R-Leg
+├── GroundCheck
+└── CamPos
+    └── Main Camera
+        └── ThrowOrigin
+            └── MilkThrowing
 ```
 
-If more visual objects are added, keep them below the child object `CharacterObjects`. The root Player must not be scaled during sliding as this would also scale the CharacterController, camera, GroundCheck and future held objects.
+Keep any visible character models under `CharacterObjects`. `GroundCheck` they must remain near the base of the capsule. `CamPos` is the camera pivot lowered by the sliding system which is postponed. `ThrowOrigin` controls where milk crates appear.
 
 ## Components on Player
 
-The recommended root components are:
+The root `Player` object requires:
 
-- `CharacterController`
+- `Rigidbody`
+- `CapsuleCollider`
 - `PlayerController`
 - `CameraController`
 - Legacy `Animation`
 
-Do not add a Rigidbody or separate CapsuleCollider. The `CharacterController` already provides the collision shape used by the movement script. The old extra components were removed and the player was retested and works as expected.
+Do not add a `CharacterController`. Movement and collision are now handled by the Rigidbody and CapsuleCollider.
 
-## PlayerController Inspector Setup
+## Rigidbody Setup
 
-### Movement and Sprinting
+Use these rules as the baseline:
 
-The current script defaults are:
+- Mass: `1`
+- Built in `Use Gravity`: disabled because `PlayerController` applies custom gravity
+- Freeze rotation on X, Y and Z so collisions do not tip the capsule over
+- Use interpolation if camera movement appears visibly stepped
+- Use a continuous collision mode if fast movement passes through thin colliders
+- Keep damping low and tune movement through the controller's acceleration and deceleration fields
 
-| Setting | Default |
-| --- | ---: |
-| Walk speed | 6 |
-| Gravity | -20 |
-| Air acceleration | 5 |
-| Air drag | 1.5 |
-| Sprint speed | 10 |
-| Maximum sprint stamina | 2 |
-| Sprint drain speed | 1 |
-| Sprint regeneration speed | 0.75 |
-| Sprint regeneration delay | 1 second |
+The script currently disables the built in gravity at runtime as a safety measure. It should also be disabled on the prefab directly so the Inspector matches the intended behaviour.
 
-Scene values override script defaults. The current `MovementTest` scene stores maximum sprint stamina as 5, even though the script default is 2.
+## CapsuleCollider Setup
 
-`Air Acceleration` controls how quickly movement can change direction while the player is in the air. `Air Drag` controls the gradual horizontal momentum loss when the player releases WASD in the air. Ground movement still responds instantly.
+Assign the project's frictionless player Physics Material to the CapsuleCollider. This prevents collider friction from stopping the player while against a wall.
 
-### Ground Check
+The CapsuleCollider should fit the standing player and be centred on the root object. Retest ground and wall checks after changing its radius, height or centre.
 
-1. Create a child named `GroundCheck` near the capsule's feet. The default transform for this is -1 on the Y axis.
-2. Assign it to `Ground Check Radius`.
-3. Put walkable surfaces on the `Ground` layer.
-4. Select `Ground` in the `Ground Mask` field.
-5. Make sure all walkable surfaces have non-trigger Colliders and the ground layers assigned.
+## PlayerController Setup
 
-The project currently defines these gameplay layers:
+`PlayerController` contains the active Rigidbody movement system. Its main features are:
 
-- `Ground`
-- `Wall`
+- Controlled ground acceleration, deceleration and maximum speed
+- Air acceleration, air drag and retained momentum
+- Sprinting with stamina drain and regeneration
+- Parkour jump boost, coyote time, jump buffering and variable jump height
+- Wall detection, temporary wall clinging, wall sliding and wall jumping
+- Pause integration through `WorldController`
+- Public stamina data for `PlayerUIController`
 
-### Wall Movement
+### Permanent Feature Controls
 
-1. Put climbable surfaces on the `Wall` layer.
-2. Select `Wall` in the `Wall Mask` field.
-3. Make sure walls have Colliders.
+The `Perm Can` fields allow incomplete features to be blocked. The current prefab should have normal movement, sprinting and jumping enabled. `Perm Can Slide` is currently disabled because sliding is postponed and unreliable.
 
-The scene currently stores `Max Wall Cling Time` as `0.1`, the scripts default is `1`. This is still being tuned and needs testing.
+Do not enable sliding simply to test another feature. If it is restored, document the change and retest collider height, camera height, animation reset and standing clearance.
 
-### Sliding
+### Ground and Wall Checks
 
-Assign the following:
-
-- `Player Cam`: the camera object that should lower during a slide
-- `Cam Sliding Height`: the amount the camera moves down while sliding
-- `Player Anim`: the Legacy `Animation` component
-- `Slide Anim Clip`: `Assets/Animations/Character/Slide.anim`
-- `Reset Anim Clip`: `Assets/Animations/Character/Reset.anim`
-
-Sliding shrinks the CharacterController to `Slide Height` and lowers the camera by `Cam Sliding Height`. When the slide finishes, the controller and camera return to their default standing values. This replaced the earlier method where it scaled the root Player object directly.
-
-All animation clips must be set to Legacy in the debug settings of the animation. The slide clip plays once and holds its final pose. The reset clip returns animated objects to their normal pose.
+1. Assign the `GroundCheck` child to the ground check Transform field.
+2. Put walkable surfaces on the `Ground` layer and assign that layer to the ground mask.
+3. Put surfaces intended for wall movement on the `Wall` layer and assign that layer to the wall mask.
+4. Make sure tested surfaces have non trigger colliders.
+5. Test floor edges, wall corners and slopes after changing detection distances.
 
 ## CameraController Setup
 
-1. Add `CameraController` to `Player`.
-2. Assign `Main Camera` to `Cam Object`.
-3. Adjust `Mouse Sensitivity` and `Max Look Angle`.
+1. Keep `CameraController` on the root `Player` object.
+2. Assign `CamPos` as the camera object.
+3. Keep `Main Camera` below `CamPos`.
+4. Adjust mouse sensitivity and maximum look angle in the Inspector.
 
-The camera should be a child of the player so horizontal player rotation also turns the view. Vertical rotation is applied only to the camera object assigned with the `CameraController`.
+Horizontal look rotates the player. Vertical look rotates the camera's pivot. `WorldController` disables camera input while paused.
 
-## World and Pause Setup
+## Milk Throwing Setup
 
-1. Create or select the root `Controllers` GameObject in the scene.
-2. Add `WorldController` to it.
-3. Assign the pause-menu GameObject to `Pause Menu UI`.
-4. Keep the pause-menu GameObject inactive when gameplay starts.
-5. Add `PauseMenuController` to the pause-menu GameObject.
-6. Set `Main Menu Scene Index` to the required menu scene. `MovementTest` currently uses index `0` for `DevMenu`.
-7. Assign the return-confirmation panel to `Confirm Return UI`.
+The milk throwing component belongs below the camera on `ThrowOrigin`, not on an unrelated scene object. This allows throwing and placement to follow the camera's pitch.
 
-The gameplay scene must contain one active `PlayerController` before `WorldController.Start` runs. The `WorldController` finds the player's `CameraController` automatically, locks the cursor and then coordinates player, camera and menu state when the Escape key is pressed.
+Required setup:
 
-The optional input display used for development recordings is available at `Assets/Prefabs/_Dev/Dev_InputVisualiser.prefab`.
+1. Keep `ThrowOrigin` in front of the camera so a new crate does not spawn inside the player.
+2. Assign the milk crate projectile prefab.
+3. Assign the player's Rigidbody when its required by the component.
+4. Confirm spawned crates have `Rigidbody`, `Collider` and `MilkCrate` components.
+5. Use left mouse to throw and right mouse to place.
+
+`MilkThrowing` ignores collisions with other spawned crates and the player. It also blocks input while paused, while the cursor is unlocked or while UI is being used.
 
 ## Player UI Setup
 
-1. Create or select the Canvas.
-2. Add a UI Slider named `SprintSlider`.
-3. Set the slider minimum to 0 and maximum to 1.
-4. Disable slider interaction because it only displays stamina.
-5. Add `PlayerUIController` to the a dedicated child object under the dedicated `Controllers` object.
-6. Assign the Player's `PlayerController`.
-7. Assign `SprintSlider`.
+1. Create a Slider with a minimum of `0` and maximum of `1`.
+2. Add `PlayerUIController` to the gameplay UI controller object.
+3. Assign the active Rigidbody `PlayerController`.
+4. Assign the sprint Slider.
+
+The controller makes the Slider non interactable and updates it using `PlayerController.SprintStaminaPercent`. The player reference is still scene dependent and should be checked whenever a new gameplay scene is created.
+
+## World, Game and Pause Setup
+
+The gameplay scene should contain one enabled `Controllers` object with:
+
+- `WorldController` for pause state, time scale, cursor, player and camera control
+- `GameManager` for checkpoint discovery, score and delivery progress
+- Any dedicated UI controllers required by the scene
+
+Assign the pause menu object to `WorldController`. Assign the parent containing the round's `MilkCheckpoint` objects to `GameManager` before testing.
+
+`GameManager` currently detects when every checkpoint has been cleared, but the final game complete system is not implemented. Completing a round does not yet stop the game or open a results screen.
 
 ## Setup Verification
 
-Before committing player changes, verify:
+Before committing player or scene changes, verify:
 
-- WASD movement works and diagonal movement is not faster.
+- WASD movement accelerates and stops without unwanted sliding.
+- The player can still move while touching a wall.
 - Mouse look works and vertical rotation is clamped.
-- Shift drains stamina and stamina later regenerates.
-- Sprint speed continues while jumping when the Shift key and a movement key are held.
-- Releasing WASD in the air keeps momentum to the player and slows it down using `Air Drag`.
-- Space performs normal and wall jumps.
-- Coyote time and short jumps work.
-- A normal or coyote time jump beside a wall is not cancelled by wall clinging.
-- Wall cling changes into a wall slide after the set duration.
-- Ctrl starts a slide while moving on the ground.
-- The controller height and camera position reset after sliding.
-- Slide and reset animations both play.
-- The sprint slider follows the stamina value.
-- Escape opens and closes the pause menu.
-- Pausing enables the cursor, freezes the player and the camera input.
-- Resume and return confirmation buttons perform their assigned actions.
-- The Console has no errors or warnings caused by missing references.
-
+- Shift increases movement speed, drains stamina and later regenerates it.
+- Sprinting continues correctly during a jump.
+- Air momentum remains when movement input is released.
+- Normal, coyote time, buffered and shortened jumps behave correctly.
+- A jump beside a wall is not incorrectly cancelled by wall clinging.
+- Wall cling, wall slide and wall jump work against all intended wall shapes.
+- Left mouse throws a crate from `ThrowOrigin`.
+- Right mouse places a crate without bounce behaviour.
+- Pausing stops player, camera and throwing input and shows the cursor.
+- The sprint Slider follows the active player's stamina.
+- Successful deliveries update score and checkpoint progress only once.
+- Failed deliveries show feedback and can be retried successfully.
+- The Console contains no errors caused by missing references.
