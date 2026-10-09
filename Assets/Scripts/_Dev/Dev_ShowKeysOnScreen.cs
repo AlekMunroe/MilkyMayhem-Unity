@@ -15,11 +15,14 @@ public class Dev_ShowKeysOnScreen : MonoBehaviour
     public TMP_Text escKey;
     public TMP_Text shiftKey;
     public TMP_Text ctrlKey;
+    public TMP_Text lmbKey;
+    public TMP_Text rmbKey;
 
     // Update is called once per frame
     void Update()
     {
         Keyboard keyboard = Keyboard.current;
+        Mouse mouse = Mouse.current;
 
         // W Key
         if (keyboard.wKey.wasPressedThisFrame)
@@ -107,6 +110,28 @@ public class Dev_ShowKeysOnScreen : MonoBehaviour
         if (keyboard.ctrlKey.wasReleasedThisFrame)
         {
             ctrlKey.color = Color.black;
+        }
+
+        //LMB Key
+        if (mouse.leftButton.wasPressedThisFrame)
+        {
+            lmbKey.color = Color.red;
+        }
+
+        if (mouse.leftButton.wasReleasedThisFrame)
+        {
+            lmbKey.color = Color.black;
+        }
+
+        //RMB Key
+        if (mouse.rightButton.wasPressedThisFrame)
+        {
+            rmbKey.color = Color.red;
+        }
+
+        if (mouse.rightButton.wasReleasedThisFrame)
+        {
+            rmbKey.color = Color.black;
         }
     }
 }
