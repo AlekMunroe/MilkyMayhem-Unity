@@ -241,6 +241,39 @@ The following remains in the repository for references but is no longer used as 
 - Complete the missing reference safety checks.
 - Re test and balance the Rigidbody player and delivery physics int he greybox environment.
 
+### 15 October 2026 Player Controller Further Polishing
+
+### Aim
+
+Improve the player controller to give a smoother player experience.
+
+### Work completed
+
+- Changed the Wall Cling mechanic to include a small vertical boost upon clinging and reworked the gravity function when wall clingling.
+- Changed Wall Jumping to give the player a boost in the held direction.
+- `PlayerController.UpdateMovement` has been renamed to `PlayerController.UpdateGroundMovement` and mid air movement is in `PlayerController.UpdateAirMovement`.
+- Added Air Strafing to let the player have more control in mid air.
+- Added a Wall Climb for when the player reaches the top of a wall while wall clinging.
+
+### Scene Integration
+
+- Dev Playground now includes 2 long walls for more wall jumping testing.
+
+### Testing
+
+- Wall Climbing is confirmed to be functional but requires small tunning to be more smooth in gameplay.
+- Air Movement is confirmed to be functional.
+
+### Problems
+
+- The Air Strafing code is mostly found from the internet, still needs refinement as features like Bunny Hopping and instantly stopping mid air exists.
+- When Wall Jumping while facing the wall, facing vertically upwards or holding the direction into the wall results in the player able to repeatively jump into the wall.
+
+### Next Steps
+
+- Refine and bugfix the player controller to improve player experience.
+
+
 --END UPDATE--
 
 ## Entry Template
