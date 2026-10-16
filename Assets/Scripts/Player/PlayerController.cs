@@ -18,26 +18,27 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private bool perm_canJump;
     [SerializeField] private bool perm_canParkourJump;
     [SerializeField] private bool perm_canWalk;
+    [SerializeField] private bool perm_canAirMove;
     [SerializeField] private bool perm_canSlide;
 
     [Header("Movement")]
     [SerializeField] private float speed = 6f;
     [SerializeField] private float gravity = -20f;
-    [SerializeField] private float airAcceleration = 5f;
+    [SerializeField] private float maxAirSpeed = 1f;
     [SerializeField] private float airDrag = 1.5f;
     [SerializeField] private float groundAcceleration = 45f;
     [SerializeField] private float groundDeceleration = 55f;
 
     private Vector2 movementInput;
 
-    
+
     [Header("Sprinting")]
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float maxSprintStamina = 2f;
     [SerializeField] private float sprintDrainSpeed = 1f;
     [SerializeField] private float sprintRegenerationSpeed = 0.75f;
-    [SerializeField] private float sprintRegenerationDelay = 1f; 
-    
+    [SerializeField] private float sprintRegenerationDelay = 1f;
+
 
     [Header("Parkour Jump")]
     [SerializeField] private float jumpHeight = 2.5f;
@@ -58,15 +59,24 @@ public class PlayerController : MonoBehaviour
     [Header("Wall Movement")]
     [SerializeField] private LayerMask wallMask;
     [SerializeField] private float wallCheckDistance = 0.25f;
-    [SerializeField] private float maxWallClingTime = 1f;
-    [SerializeField] private float wallSlideSpeed = 3f;
+    [SerializeField] private float maxWallClingTime = 0.5f;
+    [SerializeField] private float wallSlideSpeed = 5f;
+    [SerializeField] private float wallClingBoost = 10f;
+    [SerializeField] private float wallJumpForwardForce = 8f;
+    [SerializeField] private float wallDetachSpeed = 2f;
+    [SerializeField] private float wallMomentumHalfLife = 0.15f;
+
+    [Header("Wall Climbing")]
+    [SerializeField] private bool canWallClimb = false;
+    [SerializeField] private float wallClimbVerticalBoost = 2f;
+    [SerializeField] private float wallClimbBoost = 5f;
 
     [Header("Wall Jump")]
     [SerializeField] private float wallJumpHeight = 2.5f;
     [SerializeField] private float wallJumpForce = 8f;
     [SerializeField] private float wallReattachDelay = 0.25f;
 
-    [Header("Sliding")] 
+    [Header("Sliding")]
     [SerializeField] private float slideSpeed = 12f;
     [SerializeField] private float slideDuration = 1.2f;
     [SerializeField] private float slideHeight = 1f;
@@ -80,7 +90,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private AnimationClip slideAnimClip;
     [SerializeField] private AnimationClip resetAnimClip; //Used to reset all animations to the default state
 
-    
+
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
@@ -92,15 +102,16 @@ public class PlayerController : MonoBehaviour
     private float coyoteTimer;
     private float jumpBufferTimer;
 
-    public bool isWallClinging;
+    private bool isWallClinging;
     private float wallClingTimer;
     private float wallReattachTimer;
     private Vector3 wallNormal;
+    private Vector3 storedWallNormal;
 
     private bool isSliding;
     private float slideTimer;
     private float slideCooldownTimer;
-    
+
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private Vector3 slideDirection;
@@ -115,7 +126,7 @@ public class PlayerController : MonoBehaviour
     {
         get
         {
-            if(maxSprintStamina <= 0f)
+            if (maxSprintStamina <= 0f)
             {
                 return 0f;
             }
@@ -126,7 +137,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance != null && Instance != this)
+        if (Instance != null && Instance != this)
         {
             Debug.LogWarning("Duplicate PlayerController Instance destroyed");
 
@@ -148,7 +159,7 @@ public class PlayerController : MonoBehaviour
         normalControllerHeight = capsuleCollider.height;
         normalControllerCenter = capsuleCollider.center;
 
-        if(playerCam != null)
+        if (playerCam != null)
         {
             normalCameraLocalPosition = playerCam.transform.localPosition;
         }
@@ -194,7 +205,14 @@ public class PlayerController : MonoBehaviour
         }
 
         UpdateGravity();
-        UpdateMovement();
+        if (isGrounded || isWallClinging)
+        {
+            UpdateGroundMovement();
+        }
+        else
+        {
+            UpdateAirMovement();
+        }
 
         // The released input has now been delt with by the physics update
         jumpReleased = false;
@@ -215,29 +233,41 @@ public class PlayerController : MonoBehaviour
     {
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
 
-        if(isGrounded && currentVelocity.y < 0f)
+        if (isGrounded && currentVelocity.y < 0f)
         {
             // A small force down to keep the player on the floor
             currentVelocity.y = -2f;
         }
         else if (isWallClinging)
         {
-            if(wallClingTimer <= maxWallClingTime)
+
+            if (wallClingTimer <= maxWallClingTime)
             {
-                // Stop the player from falling temporarily
+                // Stop the player from walling temporarily
                 currentVelocity.y = 0f;
             }
             else
             {
-                // SLide down
-                currentVelocity.y = -wallSlideSpeed;
-                //currentVelocity.y = wallSlideSpeed;
+                // Slide down
+                float finalWallSlideSpeed = wallSlideSpeed * (wallClingTimer - maxWallClingTime);
+
+                if(finalWallSlideSpeed > wallSlideSpeed)
+                {
+                    finalWallSlideSpeed = wallSlideSpeed;
+                }
+
+                currentVelocity.y = -finalWallSlideSpeed;
             }
         }
         else
         {
             // Normal graity while in the air
             currentVelocity.y += gravity * Time.fixedDeltaTime;
+        }
+
+        if (isGrounded || isSliding)
+        {
+            canWallClimb = false;
         }
 
         playerRigidbody.linearVelocity = currentVelocity;
@@ -278,7 +308,7 @@ public class PlayerController : MonoBehaviour
     /// <summary>
     /// Reads WASD using the Input System and moves the player
     /// </summary>
-    private void UpdateMovement()
+    private void UpdateGroundMovement()
     {
         if (!perm_canWalk)
         {
@@ -286,7 +316,28 @@ public class PlayerController : MonoBehaviour
         }
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
+
+        // Gradually reduce momentum when attaching to a wall
+        if (isWallClinging)
+        {
+            Vector3 horizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+
+            Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+
+            // Keep momentum moving along the wall
+            Vector3 velocityAlongWall = Vector3.ProjectOnPlane(horizontalVelocity, horizontalWallNormal);
+
+            float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
+
+            velocityAlongWall *= momentumMultiplier;
+
+            playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
+
+            return;
+        }
+
         Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+
         Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
 
         moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
@@ -304,9 +355,9 @@ public class PlayerController : MonoBehaviour
 
         float acceleration;
 
-        if (isSliding)
+        if (isWallClinging)
         {
-            acceleration = groundAcceleration;
+            acceleration = moveDirection.sqrMagnitude > 0.01f ? maxAirSpeed : airDrag; ;
         }
         else if (isGrounded)
         {
@@ -314,12 +365,48 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            acceleration = moveDirection.sqrMagnitude > 0.01f ? airAcceleration : airDrag;
+            acceleration = groundAcceleration;
         }
 
         Vector3 newHorizontalVelocity = Vector3.MoveTowards(currentHorizontalVelocity, targetHorizontalVelocity, acceleration * Time.fixedDeltaTime);
 
         playerRigidbody.linearVelocity = new Vector3(newHorizontalVelocity.x, currentVelocity.y, newHorizontalVelocity.z);
+    }
+
+
+    /// <summary>
+    /// Reads WASD inputs and handles movement in the air, such as air strafing.
+    /// </summary>
+    private void UpdateAirMovement()
+    {
+        if (!perm_canAirMove)
+        {
+            return;
+        }
+
+        // Keep wall jump direction
+        if(wallReattachTimer > 0f)
+        {
+            return;
+        }
+
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+        Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, moveDirection);
+
+        bool isVectorAway = Vector3.Dot(moveDirection, projectVelocity) < 0f;
+        if (projectVelocity.magnitude < maxAirSpeed || isVectorAway)
+        {
+            Vector3 idealVelocity = moveDirection.normalized * currentMovementSpeed;
+            if (!isVectorAway)
+            {
+                idealVelocity = Vector3.ClampMagnitude(idealVelocity, maxAirSpeed - projectVelocity.magnitude);
+            }
+            else
+            {
+                idealVelocity = Vector3.ClampMagnitude(idealVelocity, maxAirSpeed + projectVelocity.magnitude);
+            }
+            playerRigidbody.linearVelocity += idealVelocity;
+        }
     }
 
     /// <summary>
@@ -344,7 +431,7 @@ public class PlayerController : MonoBehaviour
         {
             jumpBufferTimer -= Time.deltaTime;
         }
-        
+
         wallReattachTimer -= Time.deltaTime;
     }
 
@@ -353,6 +440,8 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void HandleJumping()
     {
+        Keyboard keyboard = Keyboard.current;
+
         if (!perm_canJump)
         {
             return;
@@ -360,18 +449,18 @@ public class PlayerController : MonoBehaviour
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
 
-        if(jumpReleased && currentVelocity.y > 0f)
+        if (jumpReleased && currentVelocity.y > 0f)
         {
             currentVelocity.y *= jumpReleaseMultiplier;
             playerRigidbody.linearVelocity = currentVelocity;
         }
 
-        if(jumpBufferTimer <= 0f)
+        if (jumpBufferTimer <= 0f)
         {
             return;
         }
 
-        if(coyoteTimer > 0f)
+        if (coyoteTimer > 0f)
         {
             PerformParkourJump();
             return;
@@ -379,11 +468,11 @@ public class PlayerController : MonoBehaviour
 
         if (isWallClinging)
         {
-            PerformWallJump();
+            PerformWallJump(keyboard);
         }
     }
 
-    
+
 
     /// <summary>
     /// Do a normal jump with a small forward boost
@@ -414,17 +503,30 @@ public class PlayerController : MonoBehaviour
     /// <summary>
     /// Pushes the rigidbody up and away from the wall
     /// </summary>
-    private void PerformWallJump()
+    private void PerformWallJump(Keyboard keyboard)
     {
         float upwardSpeed = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
 
-        Vector3 newVelocity = wallNormal * wallJumpForce;
+        // Add momentum and push the player away from the wall
+        Vector3 newVelocity = playerRigidbody.linearVelocity;
+        newVelocity += wallNormal * wallJumpForce;
         newVelocity.y = upwardSpeed;
+
+        if (keyboard.wKey.isPressed)
+        {
+            newVelocity += transform.forward * wallJumpForwardForce;
+        }
+
+        if (keyboard.sKey.isPressed)
+        {
+            newVelocity -= transform.forward * wallJumpForwardForce;
+        }
 
         playerRigidbody.linearVelocity = newVelocity;
 
         // Reset values
         isWallClinging = false;
+        canWallClimb = false;
         wallClingTimer = 0f;
         wallReattachTimer = wallReattachDelay;
         jumpBufferTimer = 0f;
@@ -461,7 +563,7 @@ public class PlayerController : MonoBehaviour
             currentMovementSpeed = speed;
             sprintRegenTimer -= Time.deltaTime;
 
-            if(sprintRegenTimer <= 0f)
+            if (sprintRegenTimer <= 0f)
             {
                 currentSprintStamina += sprintRegenerationSpeed * Time.deltaTime;
 
@@ -475,21 +577,33 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void UpdateWallState()
     {
-        if (isGrounded || playerRigidbody.linearVelocity.y > 0f)
+        bool touchingWall = TryFindWall(out RaycastHit wallHit);
+        wallNormal = wallHit.normal;
+        if ((touchingWall || canWallClimb) && wallNormal != Vector3.zero)
+        {
+            storedWallNormal = wallNormal;
+        }
+        else if (isGrounded)
+        {
+            storedWallNormal = Vector3.zero;
+        }
+
+        if (isGrounded)
         {
             isWallClinging = false;
             wallClingTimer = 0f;
             return;
         }
-
-        bool touchingWall = TryFindWall(out RaycastHit wallHit);
 
         if (!touchingWall)
         {
             isWallClinging = false;
+            canWallClimb = false;
             wallClingTimer = 0f;
             return;
         }
+
+        // Detach from wall
 
         if (wallReattachTimer > 0f)
         {
@@ -497,9 +611,46 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        wallNormal = wallHit.normal;
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+
+        Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+
+        bool movingAwayFromWall = moveDirection.sqrMagnitude > 0.01f && Vector3.Dot(moveDirection, horizontalWallNormal) > 0.25f;
+
+        if (movingAwayFromWall)
+        {
+            Vector3 currentVelocity = playerRigidbody.linearVelocity;
+            Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;
+
+            detachVelocity.y = currentVelocity.y;
+
+            playerRigidbody.linearVelocity = detachVelocity;
+
+            isWallClinging = false;
+            wallClingTimer = 0f;
+            wallReattachTimer = wallReattachDelay;
+            return;
+        }
+
         isWallClinging = true;
         wallClingTimer += Time.deltaTime;
+    }
+
+
+    /// <summary>
+    /// Handles the climbing action while the player clings over a wall's height.
+    /// </summary>
+    /// <param name="wallNormal"> The normal vector of the wall being clung to. </param>
+    private void WallClingClimb()
+    {
+        Debug.Log("Player should wallclimb");
+
+        if (playerRigidbody.linearVelocity.y <= 0f)
+        {
+            playerRigidbody.linearVelocity -= storedWallNormal * wallClimbBoost;
+            playerRigidbody.linearVelocity += Vector3.up * wallClimbVerticalBoost;
+            canWallClimb = false;
+        }
     }
 
     /// <summary>
@@ -510,9 +661,9 @@ public class PlayerController : MonoBehaviour
     private bool TryFindWall(out RaycastHit wallHit)
     {
         Vector3 rayOrigin = capsuleCollider.bounds.center;
-        
+
         float rayDistance = capsuleCollider.radius + wallCheckDistance;
-        
+
         if (Physics.Raycast(rayOrigin, transform.forward, out wallHit, rayDistance, wallMask))
         {
             return true;
@@ -548,13 +699,13 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-        
+
         // Add the clip if it is not already in the Animation component.
         if (playerAnim.GetClip(animationClip.name) == null)
         {
             playerAnim.AddClip(animationClip, animationClip.name);
         }
-        
+
         AnimationState animationState = playerAnim[animationClip.name];
 
         if (animationState != null)
@@ -562,7 +713,7 @@ public class PlayerController : MonoBehaviour
             animationState.wrapMode = wrapMode;
         }
     }
-    
+
     /// <summary>
     /// Starts, updates and finish the actual sliding
     /// </summary>
@@ -581,7 +732,7 @@ public class PlayerController : MonoBehaviour
         if (isSliding)
         {
             slideTimer -= Time.deltaTime;
-            
+
             // Stop sliding when the timer ends or the player jumps
             if (slideTimer <= 0f || !isGrounded)
             {
@@ -590,7 +741,7 @@ public class PlayerController : MonoBehaviour
 
             return;
         }
-        
+
         bool slidePressed = keyboard.leftCtrlKey.wasPressedThisFrame || keyboard.rightCtrlKey.wasPressedThisFrame;
         bool movementKeyHeld = keyboard.wKey.isPressed || keyboard.aKey.isPressed || keyboard.sKey.isPressed || keyboard.dKey.isPressed;
         bool canSlide = slidePressed && movementKeyHeld && isGrounded && slideCooldownTimer <= 0f;
@@ -607,7 +758,7 @@ public class PlayerController : MonoBehaviour
         slideTimer = slideDuration;
 
         slideDirection = GetSlideDirection(keyboard);
-        
+
         // Shrink the height of the player and keep the bottom part to the floor
         float heightDifference = normalControllerHeight - slideHeight;
 
@@ -615,7 +766,7 @@ public class PlayerController : MonoBehaviour
         capsuleCollider.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
 
         // Visually lower the player's visual height
-        if(playerCam != null)
+        if (playerCam != null)
         {
             playerCam.transform.localPosition = normalCameraLocalPosition + (Vector3.down * camSlidingHeight);
         }
@@ -630,11 +781,11 @@ public class PlayerController : MonoBehaviour
     {
         isSliding = false;
         slideCooldownTimer = slideCooldown;
-        
+
         capsuleCollider.height = normalControllerHeight;
         capsuleCollider.center = normalControllerCenter;
 
-        if(playerCam != null)
+        if (playerCam != null)
         {
             playerCam.transform.localPosition = normalCameraLocalPosition;
         }
@@ -657,17 +808,17 @@ public class PlayerController : MonoBehaviour
         {
             horizontalInput -= 1f;
         }
-        
+
         if (keyboard.dKey.isPressed)
         {
             horizontalInput += 1f;
         }
-        
+
         if (keyboard.sKey.isPressed)
         {
             forwardInput -= 1f;
         }
-        
+
         if (keyboard.wKey.isPressed)
         {
             forwardInput += 1f;
@@ -676,7 +827,7 @@ public class PlayerController : MonoBehaviour
         Vector3 direction = (transform.right * horizontalInput) + (transform.forward * forwardInput);
 
         direction = Vector3.ClampMagnitude(direction, 1f);
-        
+
         // Go forward if there is no direction
         if (direction.sqrMagnitude < 0.01f)
         {
@@ -697,25 +848,25 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-        
+
         AnimationState animationState = playerAnim[animationClip.name];
 
         if (animationState == null)
         {
             return;
         }
-        
+
         // Restart the animation from the first frame
         animationState.time = 0f;
         animationState.speed = 1f;
         animationState.wrapMode = wrapMode;
-        
+
         playerAnim.Play(animationClip.name, PlayMode.StopAll);
     }
 
     public void UpdatePause(bool isPaused)
     {
-        if(isPaused && WorldController.isGamePaused)
+        if (isPaused && WorldController.isGamePaused)
         {
             freezePlayer = true;
             Debug.Log("PlayerController: Player paused");

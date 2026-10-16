@@ -146,10 +146,11 @@ MonoBehaviour:
   perm_canJump: 1
   perm_canParkourJump: 1
   perm_canWalk: 1
+  perm_canAirMove: 1
   perm_canSlide: 0
   speed: 6
   gravity: -20
-  airAcceleration: 5
+  maxAirSpeed: 1
   airDrag: 1.5
   groundAcceleration: 45
   groundDeceleration: 55
@@ -174,6 +175,11 @@ MonoBehaviour:
   wallCheckDistance: 0.25
   maxWallClingTime: 1
   wallSlideSpeed: 3
+  wallClingBoost: 10
+  wallJumpForwardForce: 8
+  canWallClimb: 0
+  wallClimbVerticalBoost: 2
+  wallClimbBoost: 5
   wallJumpHeight: 2.5
   wallJumpForce: 8
   wallReattachDelay: 0.25
@@ -186,7 +192,6 @@ MonoBehaviour:
   playerAnim: {fileID: 1990719714502617060}
   slideAnimClip: {fileID: 7400000, guid: 871badd787165564dab678c07d5636e4, type: 2}
   resetAnimClip: {fileID: 7400000, guid: 30709b229084b45488f57359e1f71781, type: 2}
-  isWallClinging: 0
 --- !u!114 &4369590598907748003
 MonoBehaviour:
   m_ObjectHideFlags: 0

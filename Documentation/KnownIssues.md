@@ -21,6 +21,12 @@ A frictionless Physics Material fixed the issue where standing next to a wall st
 
 **Next action:** Test these features with floors, corners, slopes and differently shaped walls. Check and confirm that a normal jump next to a wall is not replaced by a wall cling and that a wall jump will move away from the wall.
 
+The wall edge sticking, forced jumping to detach from a wall and instant momentum loss when attaching to a wall have all been fixed. The player can move away from a wall more naturally. Momentum moving along the wall will reduxe 'WallMomentumHalfLife'. 'WallClingClimb' is no longer necessary. The vertical cling boost needs to be added back.
+
+**Next action:** Test in multiple situations and test it works in the grey box
+
+--END UPDATE--
+
 ### Rigidbody gravity differs between the prefab and runtime
 
 **Status:** Configuration cleanup

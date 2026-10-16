@@ -130,6 +130,9 @@ The C# filename and class name must match.
 - Remove unused imports, fields and commented out code before merging.
 - Check Inspector references before using them.
 - Use clear method names such as `UpdateSprint` and `PerformWallJump` rather than names such as `DoStuff` or `Jumping1`.
+- Rigidbody movement must be applied in `FixedUpdate`.
+- Use the Rigidbody's actual `linearVelocity` when changing movement momentum.
+- Movement must include values which can be tested and balanced.
 
 ## Scenes and Prefabs
 

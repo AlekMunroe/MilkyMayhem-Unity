@@ -78,6 +78,8 @@ The old CharacterController version is depreciated. New scripts must use the cur
 
 Sliding code is still inside this script but `Perm Can Slide` is disabled on the prefab. Sliding is postponed because it is unreliable and not currently required.
 
+When wall clinging, the `PlayerController` moves all movement into the wall, it keeps movement along the wall and will gradually reduces momentum using `wallMomentumHalfLife`. Moving away from the wall will now detach the player from the wall and `PerformWallJump` now starts with the player's remaining velocity before it applies any wall jump forces. `WallClingClimb` is not called by the wall state because it caused the player to stick at the top of a wall. A small upward wall cling boost still needs to be added and tested.
+
 ## CameraController
 
 **Path:** `Assets/Scripts/Player/CameraController.cs`

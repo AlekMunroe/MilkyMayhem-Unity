@@ -241,7 +241,47 @@ The following remains in the repository for references but is no longer used as 
 - Complete the missing reference safety checks.
 - Re test and balance the Rigidbody player and delivery physics int he greybox environment.
 
---END UPDATE--
+### 15 October 2026 Player Controller Further Polishing
+
+### Aim
+
+Improve the player controller to give a smoother player experience.
+
+### Work completed
+
+- Changed the Wall Cling mechanic to include a small vertical boost upon clinging and reworked the gravity function when wall clingling.
+- Changed Wall Jumping to give the player a boost in the held direction.
+- `PlayerController.UpdateMovement` has been renamed to `PlayerController.UpdateGroundMovement` and mid air movement is in `PlayerController.UpdateAirMovement`.
+- Added Air Strafing to let the player have more control in mid air.
+- Added a Wall Climb for when the player reaches the top of a wall while wall clinging.
+
+### Scene Integration
+
+- Dev Playground now includes 2 long walls for more wall jumping testing.
+
+### Testing
+
+- Wall Climbing is confirmed to be functional but requires small tunning to be more smooth in gameplay.
+- Air Movement is confirmed to be functional.
+
+### Problems
+
+- The Air Strafing code is mostly found from the internet, still needs refinement as features like Bunny Hopping and instantly stopping mid air exists.
+- When Wall Jumping while facing the wall, facing vertically upwards or holding the direction into the wall results in the player able to repeatively jump into the wall.
+
+### Next Steps
+
+- Refine and bugfix the player controller to improve player experience.
+
+### Further Wall Movement Bug Fixing
+
+- Removed the Wall Climb as it made the player stick to the top edge of walls.
+- Added wall detachment so the player can release from a wall without requiring a jimp.
+- Added 'wallMomentumHalfLife' so the momentum will continue when attaching to a wall and will gradually slow down instead of instantly stopping.
+- Stopped helf movement from continuing to add speed when the player is attached to a wall.
+- Updated wall jumping to carry the any momentum the player has left to the next wall jump.
+- Kept the final wall jump as one velocity to stop the extra force from the prototype version.
+- Tested and found 'wallJumpForce' at '8' works well.
 
 ## Entry Template
 

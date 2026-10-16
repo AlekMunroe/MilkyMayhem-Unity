@@ -6,6 +6,8 @@ The project is in the grey box prototyping stage. The player now uses a Rigidbod
 
 A prototype of the delivery loop is now implemented. The player can now throw milk with the left mouse button or place milk with the right mouse button. Milk crates can bounce and break from a large impact. The successful checkports report its score and remaining delivery progress to the `GameManager`. The final round completion is currently incomplete yet it only writes a console message.
 
+The Rigidbody wall movement has been updated after more testing testing. The player now detaches from the wall when the player chooses, the momentum along the wall will gradually reduce and any momentum left is used in a wall jump. The unfinished wall climb is no longer used because the player to stook at the top edge of walls.
+
 ## Requirements
 
 - Unity Editor `6000.3.19f1`

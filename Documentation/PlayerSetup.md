@@ -79,6 +79,8 @@ Do not enable sliding simply to test another feature. If it is restored, documen
 4. Make sure tested surfaces have non trigger colliders.
 5. Test floor edges, wall corners and slopes after changing detection distances.
 
+The current wall movement keeps its momentum travelling along the wall and it will gradually reduxe it using 'WallMomentumHalfLife'. 'WallDetachSpeed' controls a push when the player moves away from the wall. 'WallReattachDelay' will stop the player from immediately attaching to the wall again.
+
 ## CameraController Setup
 
 1. Keep `CameraController` on the root `Player` object.
@@ -136,6 +138,10 @@ Before committing player or scene changes, verify:
 - Normal, coyote time, buffered and shortened jumps behave correctly.
 - A jump beside a wall is not incorrectly cancelled by wall clinging.
 - Wall cling, wall slide and wall jump work against all intended wall shapes.
+- Moving away from a wall detaches the player without requiring them to jump.
+- Momentum along the wall gradually reduces instead of stopping instantly.
+- The player can exit at the top edge of a wall instead of getting stuck.
+- A wall jump keeps momentum without creating too much force force.
 - Left mouse throws a crate from `ThrowOrigin`.
 - Right mouse places a crate without bounce behaviour.
 - Pausing stops player, camera and throwing input and shows the cursor.
