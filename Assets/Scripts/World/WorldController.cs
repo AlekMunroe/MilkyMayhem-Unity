@@ -71,7 +71,7 @@ public class WorldController : MonoBehaviour
     /// <summary>
     /// Enable the cursor
     /// </summary>
-    void ReleaseMouse()
+    public void ReleaseMouse()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;

@@ -273,20 +273,101 @@ Improve the player controller to give a smoother player experience.
 
 - Refine and bugfix the player controller to improve player experience.
 
+### Further Wall Movement Bug Fixing
 
---END UPDATE--
+- Removed the Wall Climb as it made the player stick to the top edge of walls.
+- Added wall detachment so the player can release from a wall without requiring a jimp.
+- Added 'wallMomentumHalfLife' so the momentum will continue when attaching to a wall and will gradually slow down instead of instantly stopping.
+- Stopped helf movement from continuing to add speed when the player is attached to a wall.
+- Updated wall jumping to carry the any momentum the player has left to the next wall jump.
+- Kept the final wall jump as one velocity to stop the extra force from the prototype version.
+- Tested and found 'wallJumpForce' at '8' works well.
+
+### 16 October 2026 Vertical Slice Gameplay Loop
+
+### Aim
+Create the first playable vertical slice by connecting the exiting mechanics and systems into one complete gameplay loop.
+
+### Work completed
+
+### Player Movement and Surface Detection
+- Tested the updated forward momentum for wall jumping.
+- Found the forward movmenet works but its too simple and the player has little control.
+- Fixed the uncontrolled momentum when the player attaches to a wall.
+- Added wall detachment when the player moves away from a wall.
+- Added back the prototype vertical wall cling boost.
+- Added the `Environment` layer for surfaces to be detected as ground or walls.
+
+### Greybox and Scene Setup
+- Imported the grey box environment.
+- Scaled the grey box to `0.4, 0.4, 0.4` to work with the current player's scals.
+- Added the `Environment` layers and added visible region borders for the vertical slice.
+- Created `MainGame` as the complete gameplay scene.
+- Created `RestartTrigger` to restart the scene if the player falls out of bounds.
+
+### Checkpoint Navigation
+- Added a temporary 3D directional arrow.
+- Exposed the checkpoints list using `GameManager.Checkpoints` using `IReadOnlyList`.
+- Created a `CheckpointArrow` to find the closest available checkpoint.
+- Updated the arrow to rotate towards the closest checkpoint and hide it when no checkpoints are left.
+
+### Gameplay UI and Round Completion
+- Added UI for completed deliveries, remaining deliveries and the round timer.
+- Added a configurable round timer to `GameManager`.
+- Added success and failed round completion.
+- Added a results screen which shows the completion time, completed deliveries, broken bottles and the player's final score.
+- Connected `PlayerController`, `CameraController` and `PlayerUIController` to `GameManager.RoundCompleted`.
+- Stopped the movement and camera when the round completes.
+- Enabled the cursor when the results screen opens.
+- Added a `RoundCompletionMenu` with restart and return to main menu buttons.
+
+## Milk Crate Feedback
+- Added seperate `DefaultObject` and `BrokenObject` objects to the milk crate prefab
+- Added temporary throwing and bottle breaking sounds.
+- Added broken bottle tracking to the `GameManager`.
+
+### Testing
+- The player can move through the grey box.
+- The angle based ground and wall detection system works with the Environment later.
+- The player can detach from walls.
+- Wall momentum gradually decreases rather than instantly stopping.
+- The arrow points towards the closest available checkpoint.
+- Completing all deliveries stop the round.
+- The round timer reaching zero before completing all deliveries stop the round.
+- The results UI shows the current round information.
+- The current scene can be restarted.
+
+### Problems
+- Forward wall jumping momentum requires testing for the grey box environment.
+- The grey box scale and pivot were not set reletive to the player and requires manual adjustment.
+- The restart trigger is a basic prototype and needs testing and more protection.
+- The current UI, object and audio are temporary.
+- Pause controls need testing properly with these updates.
+
+### Next steps
+- Test the complete gameplay loop repeatedly with different goals.
+- Fix any bugs which prevent the game from completing.
+- Testing and updating values.
+- Explain the model scale and pivot requirements to the 3D designers.
+
+
 
 ## Entry Template
 
 ### Date and Feature
 
-**Aim:** What was the intended result?
+### Aim
+What was the intended result?
 
-**Work completed:** What changed?
+### Work completed
+What changed?
 
-**Testing:** How was it tested and what happened?
+### Testing
+How was it tested and what happened?
 
-**Problems:** What failed or remains unfinished?
+### Problems
+What failed or remains unfinished?
 
-**Next steps:** What should happen next?
+### Next steps
+What should happen next?
 

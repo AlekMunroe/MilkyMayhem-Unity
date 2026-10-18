@@ -70,6 +70,19 @@ Known issues:
 
 Before sending the ZIP file, extract it into a different folder and make sure it includes everything written in the notes. The developer will then review the files, move accepted assets into the correct project folders and create or fix Unity materials where required.
 
+### Model Scales and Pivot Requirements
+Models must be created and tested reletive to the player's size. The Player GameObject uses a transform scale of `1, 1, 1`. If you use a reference cube representing the player's physical size use `1, 2, 1`.
+
+Before submitting an environmental mode:
+1. Import it into a test project using Unity `6000.3.19f1`.
+2. Compare it with a reference object scaled to `1, 2, 1`.
+3. Confirm all object provide enoough space for the player.
+4. Apply the model's scale before exporting it.
+5. Check the model is not offset from it's origin unnecessarily.
+6. Place the pivot at a useful position.
+
+The pivot does not always need to be in the exact centre. A bottom centre pivot or a snapping point may be more useful for an environment object. It must not accidentally be positioned at a distant corner which makes placement, rotation or scaling difficult.
+
 ## Folder Structure
 
 Use the existing folders and only create a new category when it is required:
@@ -130,6 +143,20 @@ The C# filename and class name must match.
 - Remove unused imports, fields and commented out code before merging.
 - Check Inspector references before using them.
 - Use clear method names such as `UpdateSprint` and `PerformWallJump` rather than names such as `DoStuff` or `Jumping1`.
+- Rigidbody movement must be applied in `FixedUpdate`.
+- Use the Rigidbody's actual `linearVelocity` when changing movement momentum.
+- Movement must include values which can be tested and balanced.
+
+## Environment Setup
+Objects used by the player's ground and wall movement must:
+- Use the `Environment` layer.
+- Have a non trigger collider.
+- Use a physical scale relative to the player.
+- Have surfaces with angles which fit the PlayerController's ground or wall angle ranges.
+
+Do not use seperate Ground or Wall laters for the player. The current `PlayerController` uses the normal angle of surfaces to choose if it it a ground or wall. One environment object can now act as botn a walkable and climbable surface.
+
+After importing or changing the environment, test walking, slopes, jumping next to walls, wall clinging, wall detachment and wall jumping.
 
 ## Scenes and Prefabs
 

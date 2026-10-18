@@ -31,14 +31,14 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 movementInput;
 
-    
+
     [Header("Sprinting")]
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float maxSprintStamina = 2f;
     [SerializeField] private float sprintDrainSpeed = 1f;
     [SerializeField] private float sprintRegenerationSpeed = 0.75f;
-    [SerializeField] private float sprintRegenerationDelay = 1f; 
-    
+    [SerializeField] private float sprintRegenerationDelay = 1f;
+
 
     [Header("Parkour Jump")]
     [SerializeField] private float jumpHeight = 2.5f;
@@ -46,10 +46,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float coyoteTime = 0.15f;
     [SerializeField] private float jumpBufferTime = 0.15f;
 
-    [Header("Ground Check")]
-    [SerializeField] private float groundDistance = 0.5f;
-    [SerializeField] private LayerMask groundMask;
-    [SerializeField] private Transform groundCheckRadius;
+    [Header("Surface Check")]
+    [SerializeField] private LayerMask environmentMask;
+    [SerializeField] private float groundCheckDistance = 0.15f;
+    [SerializeField] private float maxGroundAngle = 55f;
+    [SerializeField] private float minWallAngle = 70f;
+    [SerializeField] private float maxWallAngle = 110f;
 
     [SerializeField, Range(0.1f, 1f)]
     private float jumpReleaseMultiplier = 0.5f;
@@ -57,11 +59,12 @@ public class PlayerController : MonoBehaviour
     private bool jumpReleased;
 
     [Header("Wall Movement")]
-    [SerializeField] private LayerMask wallMask;
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallSlideSpeed = 5f;
-    [SerializeField] private float wallClingBoost = 10f;
+    [SerializeField] private float wallJumpForwardForce = 8f;
+    [SerializeField] private float wallDetachSpeed = 2f;
+    [SerializeField] private float wallMomentumHalfLife = 0.15f;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
@@ -73,7 +76,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float wallJumpForce = 8f;
     [SerializeField] private float wallReattachDelay = 0.25f;
 
-    [Header("Sliding")] 
+    [Header("Sliding")]
     [SerializeField] private float slideSpeed = 12f;
     [SerializeField] private float slideDuration = 1.2f;
     [SerializeField] private float slideHeight = 1f;
@@ -87,7 +90,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private AnimationClip slideAnimClip;
     [SerializeField] private AnimationClip resetAnimClip; //Used to reset all animations to the default state
 
-    
+
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
@@ -108,7 +111,7 @@ public class PlayerController : MonoBehaviour
     private bool isSliding;
     private float slideTimer;
     private float slideCooldownTimer;
-    
+
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private Vector3 slideDirection;
@@ -123,7 +126,7 @@ public class PlayerController : MonoBehaviour
     {
         get
         {
-            if(maxSprintStamina <= 0f)
+            if (maxSprintStamina <= 0f)
             {
                 return 0f;
             }
@@ -134,7 +137,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance != null && Instance != this)
+        if (Instance != null && Instance != this)
         {
             Debug.LogWarning("Duplicate PlayerController Instance destroyed");
 
@@ -156,13 +159,21 @@ public class PlayerController : MonoBehaviour
         normalControllerHeight = capsuleCollider.height;
         normalControllerCenter = capsuleCollider.center;
 
-        if(playerCam != null)
+        if (playerCam != null)
         {
             normalCameraLocalPosition = playerCam.transform.localPosition;
         }
 
         SetupAnimationClip(slideAnimClip, WrapMode.ClampForever);
         SetupAnimationClip(resetAnimClip, WrapMode.ClampForever);
+    }
+
+    private void Start()
+    {
+        if(GameManager.Instance != null)
+        {
+            GameManager.Instance.RoundCompleted += HandleRoundCompleted;
+        }
     }
 
     private void Update()
@@ -220,7 +231,27 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void UpdateGroundCheck()
     {
-        isGrounded = Physics.CheckSphere(groundCheckRadius.position, groundDistance, groundMask);
+        // https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Bounds.html
+
+        Bounds playerBounds = capsuleCollider.bounds;
+
+        // A sphere slightly smaller than the capsuleCollider
+        float sphereRadus = Mathf.Min(playerBounds.extents.x, playerBounds.extents.z) * 0.9f;
+
+        // Cast from centre to a little elow the capsuleCollider
+        float sphereCastDistance = playerBounds.extents.y - sphereRadus + groundCheckDistance;
+
+        bool surfaceFound = Physics.SphereCast(playerBounds.center, sphereRadus, Vector3.down, out RaycastHit groundHIt, sphereCastDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!surfaceFound)
+        {
+            isGrounded = false;
+            return;
+        }
+
+        float surfaceAngle = Vector3.Angle(groundHIt.normal, Vector3.up);
+
+        isGrounded = surfaceAngle <= maxGroundAngle;
     }
 
     /// <summary>
@@ -230,31 +261,30 @@ public class PlayerController : MonoBehaviour
     {
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
 
-        if(isGrounded && currentVelocity.y < 0f)
+        if (isGrounded && currentVelocity.y < 0f)
         {
             // A small force down to keep the player on the floor
             currentVelocity.y = -2f;
         }
         else if (isWallClinging)
         {
-            if(wallClingTimer <= maxWallClingTime)
+
+            if (wallClingTimer <= maxWallClingTime)
             {
-                // Stop the player from falling temporarily
-                //Note from Theo: After some testing and feedback from other members of the team, I have changed the wall cling to be a small boost upwards instead of just stopping, similar to Titanfall 2.
-                float finalClingBoost = wallClingBoost * (maxWallClingTime - wallClingTimer);
-                currentVelocity.y = finalClingBoost;
-                canWallClimb = true;
+                // Stop the player from walling temporarily
+                currentVelocity.y = 0f;
             }
             else
             {
                 // Slide down
                 float finalWallSlideSpeed = wallSlideSpeed * (wallClingTimer - maxWallClingTime);
-                if (finalWallSlideSpeed > wallSlideSpeed)
+
+                if(finalWallSlideSpeed > wallSlideSpeed)
                 {
                     finalWallSlideSpeed = wallSlideSpeed;
                 }
+
                 currentVelocity.y = -finalWallSlideSpeed;
-                canWallClimb = false;
             }
         }
         else
@@ -314,7 +344,28 @@ public class PlayerController : MonoBehaviour
         }
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
+
+        // Gradually reduce momentum when attaching to a wall
+        if (isWallClinging)
+        {
+            Vector3 horizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+
+            Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+
+            // Keep momentum moving along the wall
+            Vector3 velocityAlongWall = Vector3.ProjectOnPlane(horizontalVelocity, horizontalWallNormal);
+
+            float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
+
+            velocityAlongWall *= momentumMultiplier;
+
+            playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
+
+            return;
+        }
+
         Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+
         Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
 
         moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
@@ -334,7 +385,7 @@ public class PlayerController : MonoBehaviour
 
         if (isWallClinging)
         {
-            acceleration = moveDirection.sqrMagnitude > 0.01f ? maxAirSpeed : airDrag;;
+            acceleration = moveDirection.sqrMagnitude > 0.01f ? maxAirSpeed : airDrag; ;
         }
         else if (isGrounded)
         {
@@ -361,11 +412,17 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // Keep wall jump direction
+        if(wallReattachTimer > 0f)
+        {
+            return;
+        }
+
         Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
         Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, moveDirection);
 
         bool isVectorAway = Vector3.Dot(moveDirection, projectVelocity) < 0f;
-        if(projectVelocity.magnitude < maxAirSpeed || isVectorAway)
+        if (projectVelocity.magnitude < maxAirSpeed || isVectorAway)
         {
             Vector3 idealVelocity = moveDirection.normalized * currentMovementSpeed;
             if (!isVectorAway)
@@ -402,7 +459,7 @@ public class PlayerController : MonoBehaviour
         {
             jumpBufferTimer -= Time.deltaTime;
         }
-        
+
         wallReattachTimer -= Time.deltaTime;
     }
 
@@ -420,18 +477,18 @@ public class PlayerController : MonoBehaviour
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
 
-        if(jumpReleased && currentVelocity.y > 0f)
+        if (jumpReleased && currentVelocity.y > 0f)
         {
             currentVelocity.y *= jumpReleaseMultiplier;
             playerRigidbody.linearVelocity = currentVelocity;
         }
 
-        if(jumpBufferTimer <= 0f)
+        if (jumpBufferTimer <= 0f)
         {
             return;
         }
 
-        if(coyoteTimer > 0f)
+        if (coyoteTimer > 0f)
         {
             PerformParkourJump();
             return;
@@ -443,7 +500,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    
+
 
     /// <summary>
     /// Do a normal jump with a small forward boost
@@ -478,21 +535,22 @@ public class PlayerController : MonoBehaviour
     {
         float upwardSpeed = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
 
-        Vector3 newVelocity = wallNormal * wallJumpForce;
-        
+        // Add momentum and push the player away from the wall
+        Vector3 newVelocity = playerRigidbody.linearVelocity;
+        newVelocity += wallNormal * wallJumpForce;
         newVelocity.y = upwardSpeed;
 
         if (keyboard.wKey.isPressed)
         {
-            newVelocity += transform.forward * wallJumpForce;
+            newVelocity += transform.forward * wallJumpForwardForce;
         }
 
         if (keyboard.sKey.isPressed)
         {
-            newVelocity -= transform.forward * wallJumpForce;
+            newVelocity -= transform.forward * wallJumpForwardForce;
         }
 
-        playerRigidbody.linearVelocity += newVelocity;
+        playerRigidbody.linearVelocity = newVelocity;
 
         // Reset values
         isWallClinging = false;
@@ -533,7 +591,7 @@ public class PlayerController : MonoBehaviour
             currentMovementSpeed = speed;
             sprintRegenTimer -= Time.deltaTime;
 
-            if(sprintRegenTimer <= 0f)
+            if (sprintRegenTimer <= 0f)
             {
                 currentSprintStamina += sprintRegenerationSpeed * Time.deltaTime;
 
@@ -557,7 +615,7 @@ public class PlayerController : MonoBehaviour
         {
             storedWallNormal = Vector3.zero;
         }
-        
+
         if (isGrounded)
         {
             isWallClinging = false;
@@ -567,18 +625,38 @@ public class PlayerController : MonoBehaviour
 
         if (!touchingWall)
         {
-            if (canWallClimb)
-            {
-                WallClingClimb();
-            }
             isWallClinging = false;
+            canWallClimb = false;
             wallClingTimer = 0f;
             return;
         }
 
+        // Detach from wall
+
         if (wallReattachTimer > 0f)
         {
             isWallClinging = false;
+            return;
+        }
+
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+
+        Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+
+        bool movingAwayFromWall = moveDirection.sqrMagnitude > 0.01f && Vector3.Dot(moveDirection, horizontalWallNormal) > 0.25f;
+
+        if (movingAwayFromWall)
+        {
+            Vector3 currentVelocity = playerRigidbody.linearVelocity;
+            Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;
+
+            detachVelocity.y = currentVelocity.y;
+
+            playerRigidbody.linearVelocity = detachVelocity;
+
+            isWallClinging = false;
+            wallClingTimer = 0f;
+            wallReattachTimer = wallReattachDelay;
             return;
         }
 
@@ -611,31 +689,55 @@ public class PlayerController : MonoBehaviour
     private bool TryFindWall(out RaycastHit wallHit)
     {
         Vector3 rayOrigin = capsuleCollider.bounds.center;
-        
+
         float rayDistance = capsuleCollider.radius + wallCheckDistance;
-        
-        if (Physics.Raycast(rayOrigin, transform.forward, out wallHit, rayDistance, wallMask))
+
+        // Seperate direction wall detection
+        // I am using multiple if statements for readability
+        if(TryFindWallInDirection(rayOrigin, transform.forward, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if (Physics.Raycast(rayOrigin, -transform.forward, out wallHit, rayDistance, wallMask))
+        if(TryFindWallInDirection(rayOrigin, -transform.forward, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if (Physics.Raycast(rayOrigin, transform.right, out wallHit, rayDistance, wallMask))
+        if (TryFindWallInDirection(rayOrigin, transform.right, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if (Physics.Raycast(rayOrigin, -transform.right, out wallHit, rayDistance, wallMask))
+        if (TryFindWallInDirection(rayOrigin, -transform.right, rayDistance, out wallHit))
         {
             return true;
         }
 
         wallHit = default;
         return false;
+    }
+
+    /// <summary>
+    /// Check if a surface in the direction is a wall based on the angle.
+    /// </summary>
+    /// <param name="rayOrigin">Starting point</param>
+    /// <param name="rayDirection">Direction to check</param>
+    /// <param name="rayDistance">Max detection distance</param>
+    /// <param name="wallHit"></param>
+    /// <returns>True if the surface is in range of the wall angle range</returns>
+    private bool TryFindWallInDirection(Vector3 rayOrigin, Vector3 rayDirection, float rayDistance, out RaycastHit wallHit)
+    {
+        bool surfaceFound = Physics.Raycast(rayOrigin, rayDirection, out wallHit, rayDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!surfaceFound)
+        {
+            return false;
+        }
+
+        float surfaceAngle = Vector3.Angle(wallHit.normal, Vector3.up);
+
+        return surfaceAngle >= minWallAngle && surfaceAngle <= maxWallAngle;
     }
 
     /// <summary>
@@ -649,13 +751,13 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-        
+
         // Add the clip if it is not already in the Animation component.
         if (playerAnim.GetClip(animationClip.name) == null)
         {
             playerAnim.AddClip(animationClip, animationClip.name);
         }
-        
+
         AnimationState animationState = playerAnim[animationClip.name];
 
         if (animationState != null)
@@ -663,7 +765,7 @@ public class PlayerController : MonoBehaviour
             animationState.wrapMode = wrapMode;
         }
     }
-    
+
     /// <summary>
     /// Starts, updates and finish the actual sliding
     /// </summary>
@@ -682,7 +784,7 @@ public class PlayerController : MonoBehaviour
         if (isSliding)
         {
             slideTimer -= Time.deltaTime;
-            
+
             // Stop sliding when the timer ends or the player jumps
             if (slideTimer <= 0f || !isGrounded)
             {
@@ -691,7 +793,7 @@ public class PlayerController : MonoBehaviour
 
             return;
         }
-        
+
         bool slidePressed = keyboard.leftCtrlKey.wasPressedThisFrame || keyboard.rightCtrlKey.wasPressedThisFrame;
         bool movementKeyHeld = keyboard.wKey.isPressed || keyboard.aKey.isPressed || keyboard.sKey.isPressed || keyboard.dKey.isPressed;
         bool canSlide = slidePressed && movementKeyHeld && isGrounded && slideCooldownTimer <= 0f;
@@ -708,7 +810,7 @@ public class PlayerController : MonoBehaviour
         slideTimer = slideDuration;
 
         slideDirection = GetSlideDirection(keyboard);
-        
+
         // Shrink the height of the player and keep the bottom part to the floor
         float heightDifference = normalControllerHeight - slideHeight;
 
@@ -716,7 +818,7 @@ public class PlayerController : MonoBehaviour
         capsuleCollider.center = normalControllerCenter - (Vector3.up * heightDifference * 0.5f);
 
         // Visually lower the player's visual height
-        if(playerCam != null)
+        if (playerCam != null)
         {
             playerCam.transform.localPosition = normalCameraLocalPosition + (Vector3.down * camSlidingHeight);
         }
@@ -731,11 +833,11 @@ public class PlayerController : MonoBehaviour
     {
         isSliding = false;
         slideCooldownTimer = slideCooldown;
-        
+
         capsuleCollider.height = normalControllerHeight;
         capsuleCollider.center = normalControllerCenter;
 
-        if(playerCam != null)
+        if (playerCam != null)
         {
             playerCam.transform.localPosition = normalCameraLocalPosition;
         }
@@ -758,17 +860,17 @@ public class PlayerController : MonoBehaviour
         {
             horizontalInput -= 1f;
         }
-        
+
         if (keyboard.dKey.isPressed)
         {
             horizontalInput += 1f;
         }
-        
+
         if (keyboard.sKey.isPressed)
         {
             forwardInput -= 1f;
         }
-        
+
         if (keyboard.wKey.isPressed)
         {
             forwardInput += 1f;
@@ -777,7 +879,7 @@ public class PlayerController : MonoBehaviour
         Vector3 direction = (transform.right * horizontalInput) + (transform.forward * forwardInput);
 
         direction = Vector3.ClampMagnitude(direction, 1f);
-        
+
         // Go forward if there is no direction
         if (direction.sqrMagnitude < 0.01f)
         {
@@ -798,37 +900,52 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-        
+
         AnimationState animationState = playerAnim[animationClip.name];
 
         if (animationState == null)
         {
             return;
         }
-        
+
         // Restart the animation from the first frame
         animationState.time = 0f;
         animationState.speed = 1f;
         animationState.wrapMode = wrapMode;
-        
+
         playerAnim.Play(animationClip.name, PlayMode.StopAll);
     }
 
     public void UpdatePause(bool isPaused)
     {
-        if(isPaused && WorldController.isGamePaused)
+        if (isPaused && WorldController.isGamePaused)
         {
             freezePlayer = true;
-            Debug.Log("PlayerController: Player paused");
             return;
         }
 
         freezePlayer = false;
-        Debug.Log("PlayerController: Player unpaused");
+    }
+
+    private void HandleRoundCompleted()
+    {
+        freezePlayer = true;
+        movementInput = Vector2.zero;
+
+        playerRigidbody.linearVelocity = Vector3.zero;
+        playerRigidbody.angularVelocity = Vector3.zero;
     }
 
     public CameraController GetCameraController()
     {
         return GetComponent<CameraController>();
+    }
+
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RoundCompleted -= HandleRoundCompleted;
+        }
     }
 }

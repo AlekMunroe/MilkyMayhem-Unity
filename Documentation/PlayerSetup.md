@@ -17,10 +17,12 @@ Player
 └── CamPos
     └── Main Camera
         └── ThrowOrigin
-            └── MilkThrowing
+            ├── MilkThrowing
+            └── CheckpointArrowOrigin
+                └── ArrowObject
 ```
 
-Keep any visible character models under `CharacterObjects`. `GroundCheck` they must remain near the base of the capsule. `CamPos` is the camera pivot lowered by the sliding system which is postponed. `ThrowOrigin` controls where milk crates appear.
+Keep any visible character models under `CharacterObjects`. `GroundCheck` is in the hierarchy but the angle based detection system uses the CapsuleCollider's bounds instead. `CamPos` is the camera's pivot which is lowerev by the sliding system (postponed). `ThrowOrigin` controls where milk crates appear. The checkpoint arrow object are stored in the player prefab and must be assigned to `CheckpointArrow`.
 
 ## Components on Player
 
@@ -73,11 +75,16 @@ Do not enable sliding simply to test another feature. If it is restored, documen
 
 ### Ground and Wall Checks
 
-1. Assign the `GroundCheck` child to the ground check Transform field.
-2. Put walkable surfaces on the `Ground` layer and assign that layer to the ground mask.
-3. Put surfaces intended for wall movement on the `Wall` layer and assign that layer to the wall mask.
-4. Make sure tested surfaces have non trigger colliders.
-5. Test floor edges, wall corners and slopes after changing detection distances.
+1. Put every surface ground or wall surface as the `Environment` layer.
+2. Assign the `Environment` to the `PlayerController` envionment mask.
+3. Make sure every surface has non trigger colliders.
+4. Use `Max Ground Angle` to control the steepest surface which counts as ground.
+5. Use `Min Wall Angle` and `Max Wall Angle` to control which surface counts as a wall.
+6. Test the floor edges, wall corners and slopes after changing the detection distances or angles.
+
+The current system uses the normal of the surface to choose if its a ground or a wall. This will allow one environment object to contain both walkable and climbable surfacine without requiring seperate Ground and Wall layers.
+
+The current wall movement keeps mometum moving along the wall and gradually reduces it using `wallMomentumHalfLife`. `wallDetachSpeed` controls how long it takes the player to detach from a wall. `wallReattachDelay` stops the player from sttaching to a wall immediately after detaching.
 
 ## CameraController Setup
 
@@ -87,6 +94,17 @@ Do not enable sliding simply to test another feature. If it is restored, documen
 4. Adjust mouse sensitivity and maximum look angle in the Inspector.
 
 Horizontal look rotates the player. Vertical look rotates the camera's pivot. `WorldController` disables camera input while paused.
+
+
+`CheckpointArrow` controls a temporary 3D arrow attached to the player.
+
+1. Keep the arrow model attached.
+2. Add the arrow object to `ArrowObjectOrigin.`
+3. Use `Model Rotation Offset` if the model does not point correctly on the Z axis.
+4. Make sure the scene's `GameManager` is enabled.
+5. Make sure the checkpoint is assigned in the `GameManager`.
+
+The arrow reads the checkpoints using `GameManager.Checkpoints`. It then points to the closes available checkpoint and hides when there are no checkpoints available.
 
 ## Milk Throwing Setup
 
@@ -108,8 +126,11 @@ Required setup:
 2. Add `PlayerUIController` to the gameplay UI controller object.
 3. Assign the active Rigidbody `PlayerController`.
 4. Assign the sprint Slider.
+5. Assign the delivery progress and remaining time TMP text objects.
+6. Assign the round results and round summary TMP text objects.
+7. Keep `PlayerUIController` on an object which will stay active when `RoundCompleteUI` hides.
 
-The controller makes the Slider non interactable and updates it using `PlayerController.SprintStaminaPercent`. The player reference is still scene dependent and should be checked whenever a new gameplay scene is created.
+The controller makes the Slider non interactable and updates it using `PlayerController.SprintStaminaPercent`. It listens to the GameManager's checkpoint, timer and round complete events to update the UI. The player reference is still scene dependent and should be checked whena new gameplay scene is created.
 
 ## World, Game and Pause Setup
 
@@ -121,7 +142,9 @@ The gameplay scene should contain one enabled `Controllers` object with:
 
 Assign the pause menu object to `WorldController`. Assign the parent containing the round's `MilkCheckpoint` objects to `GameManager` before testing.
 
-`GameManager` currently detects when every checkpoint has been cleared, but the final game complete system is not implemented. Completing a round does not yet stop the game or open a results screen.
+Assign the pause menu object to the `WorldController`. Assign the parent with the all the `MilkCheckpoint` object and the `RoundCompleteUI` to `GameManager.
+
+`GameManager` starts the round timer, tracks the checkpoints, the score, broken bottles. It completes the round when every checkpoint is completed or the timer reaches zero. `PlayerController`, `CameraController` and the `PlayerUIController` all listen to `RoundCompleted` to stop the gameplay and show the final results.
 
 ## Setup Verification
 
@@ -136,6 +159,10 @@ Before committing player or scene changes, verify:
 - Normal, coyote time, buffered and shortened jumps behave correctly.
 - A jump beside a wall is not incorrectly cancelled by wall clinging.
 - Wall cling, wall slide and wall jump work against all intended wall shapes.
+- Moving away from a wall detaches the player without requiring them to jump.
+- Momentum along the wall gradually reduces instead of stopping instantly.
+- The player can exit at the top edge of a wall instead of getting stuck.
+- A wall jump keeps momentum without creating too much force force.
 - Left mouse throws a crate from `ThrowOrigin`.
 - Right mouse places a crate without bounce behaviour.
 - Pausing stops player, camera and throwing input and shows the cursor.
@@ -143,3 +170,10 @@ Before committing player or scene changes, verify:
 - Successful deliveries update score and checkpoint progress only once.
 - Failed deliveries show feedback and can be retried successfully.
 - The Console contains no errors caused by missing references.
+- Every floor and wall uses the `Environment` layer.
+- The checkpoint arrow points to the closest available checkpoint.
+- The delivery and timer UI show the correct values.
+- Round completion stops the player and camera.
+- Running out of time shows the failed round results.
+- The result screen shows completion time, deliveries, broken bottles and the player's score.
+- Restarting restarts the gameplay scene.
