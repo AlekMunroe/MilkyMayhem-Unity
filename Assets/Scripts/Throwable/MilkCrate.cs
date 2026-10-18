@@ -17,6 +17,13 @@ public class MilkCrate : MonoBehaviour
     [Header("Collision")]
     [SerializeField] private LayerMask bounceSurfaceMask = ~0;
 
+    [Header("Feedback")]
+    [SerializeField] private GameObject defaultObject;
+    [SerializeField] private GameObject brokenObject;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip bottleSmashSound;
+    [SerializeField] private AudioClip crateThrowSound;
+
     private Rigidbody projectileRigidbody;
     private int remainingBounces;
     private float nextAllowedBounceTime;
@@ -53,6 +60,46 @@ public class MilkCrate : MonoBehaviour
             return;
         }
 
+        if (defaultObject == null)
+        {
+            Debug.LogError("MilkCrate: defaultObject is not assigned");
+
+            enabled = false;
+            return;
+        }
+
+        if (brokenObject == null)
+        {
+            Debug.LogError("MilkCrate: brokenObject is not assigned");
+
+            enabled = false;
+            return;
+        }
+        
+        if (audioSource == null)
+        {
+            Debug.LogError("MilkCrate: audioSource is not assigned");
+
+            enabled = false;
+            return;
+        }
+
+        if (bottleSmashSound == null)
+        {
+            Debug.LogError("MilkCrate: bottleSmashSound is not assigned");
+
+            enabled = false;
+            return;
+        }
+
+        if (crateThrowSound == null)
+        {
+            Debug.LogError("MilkCrate: crateThrowSound is not assigned");
+
+            enabled = false;
+            return;
+        }
+
         remainingBounces = maximumBounces;
     }
 
@@ -60,6 +107,11 @@ public class MilkCrate : MonoBehaviour
     {
         // Remove every projectile that misses every surface and checkpoint
         Destroy(gameObject, maximumLifetime);
+
+        if (audioSource != null)
+        {
+            audioSource.PlayOneShot(crateThrowSound);
+        }
     }
 
     private void FixedUpdate()
@@ -152,7 +204,24 @@ public class MilkCrate : MonoBehaviour
     /// </summary>
     public void MarkBroken()
     {
+        if (IsBroken)
+        {
+            return;
+        }
+
         IsBroken = true;
+        defaultObject.SetActive(false);
+        brokenObject.SetActive(true);
+
+        if(audioSource != null)
+        {
+            audioSource.PlayOneShot(bottleSmashSound);
+        }
+
+        if(GameManager.Instance != null)
+        {
+            GameManager.Instance.CountBrokenBottles();
+        }
     }
 
     /// <summary>

@@ -1429,6 +1429,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3745421130252953095, guid: 463432ab4904611ec9f2403e26dfcfa2, type: 3}
+      propertyPath: wallMask.m_Bits
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3745421130252953095, guid: 463432ab4904611ec9f2403e26dfcfa2, type: 3}
+      propertyPath: environmentMask.m_Bits
+      value: 64
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1940,7 +1948,7 @@ GameObject:
   - component: {fileID: 742566020}
   - component: {fileID: 742566019}
   - component: {fileID: 742566018}
-  m_Layer: 7
+  m_Layer: 6
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2386,7 +2394,7 @@ GameObject:
   - component: {fileID: 982988520}
   - component: {fileID: 982988519}
   - component: {fileID: 982988518}
-  m_Layer: 7
+  m_Layer: 6
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2966,7 +2974,7 @@ GameObject:
   - component: {fileID: 1042456579}
   - component: {fileID: 1042456578}
   - component: {fileID: 1042456577}
-  m_Layer: 7
+  m_Layer: 6
   m_Name: Cube (11)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

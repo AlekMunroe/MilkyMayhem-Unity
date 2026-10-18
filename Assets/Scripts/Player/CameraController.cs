@@ -37,6 +37,8 @@ public class CameraController : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        GameManager.Instance.RoundCompleted += HandleRoundCompleted;
     }
 
     private void Update()
@@ -64,5 +66,18 @@ public class CameraController : MonoBehaviour
 
         //Rotate the camera vertically
         camObject.transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+    }
+
+    private void HandleRoundCompleted()
+    {
+        enabled = false;
+    }
+
+    private void OnDestroy()
+    {
+        if(GameManager.Instance != null)
+        {
+            GameManager.Instance.RoundCompleted -= HandleRoundCompleted;
+        }
     }
 }

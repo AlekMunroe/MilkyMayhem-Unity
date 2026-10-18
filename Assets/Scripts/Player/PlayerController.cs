@@ -46,10 +46,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float coyoteTime = 0.15f;
     [SerializeField] private float jumpBufferTime = 0.15f;
 
-    [Header("Ground Check")]
-    [SerializeField] private float groundDistance = 0.5f;
-    [SerializeField] private LayerMask groundMask;
-    [SerializeField] private Transform groundCheckRadius;
+    [Header("Surface Check")]
+    [SerializeField] private LayerMask environmentMask;
+    [SerializeField] private float groundCheckDistance = 0.15f;
+    [SerializeField] private float maxGroundAngle = 55f;
+    [SerializeField] private float minWallAngle = 70f;
+    [SerializeField] private float maxWallAngle = 110f;
 
     [SerializeField, Range(0.1f, 1f)]
     private float jumpReleaseMultiplier = 0.5f;
@@ -57,11 +59,9 @@ public class PlayerController : MonoBehaviour
     private bool jumpReleased;
 
     [Header("Wall Movement")]
-    [SerializeField] private LayerMask wallMask;
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallSlideSpeed = 5f;
-    [SerializeField] private float wallClingBoost = 10f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
     [SerializeField] private float wallMomentumHalfLife = 0.15f;
@@ -168,6 +168,14 @@ public class PlayerController : MonoBehaviour
         SetupAnimationClip(resetAnimClip, WrapMode.ClampForever);
     }
 
+    private void Start()
+    {
+        if(GameManager.Instance != null)
+        {
+            GameManager.Instance.RoundCompleted += HandleRoundCompleted;
+        }
+    }
+
     private void Update()
     {
         // Get the keyboard
@@ -223,7 +231,27 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void UpdateGroundCheck()
     {
-        isGrounded = Physics.CheckSphere(groundCheckRadius.position, groundDistance, groundMask);
+        // https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Bounds.html
+
+        Bounds playerBounds = capsuleCollider.bounds;
+
+        // A sphere slightly smaller than the capsuleCollider
+        float sphereRadus = Mathf.Min(playerBounds.extents.x, playerBounds.extents.z) * 0.9f;
+
+        // Cast from centre to a little elow the capsuleCollider
+        float sphereCastDistance = playerBounds.extents.y - sphereRadus + groundCheckDistance;
+
+        bool surfaceFound = Physics.SphereCast(playerBounds.center, sphereRadus, Vector3.down, out RaycastHit groundHIt, sphereCastDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!surfaceFound)
+        {
+            isGrounded = false;
+            return;
+        }
+
+        float surfaceAngle = Vector3.Angle(groundHIt.normal, Vector3.up);
+
+        isGrounded = surfaceAngle <= maxGroundAngle;
     }
 
     /// <summary>
@@ -664,28 +692,52 @@ public class PlayerController : MonoBehaviour
 
         float rayDistance = capsuleCollider.radius + wallCheckDistance;
 
-        if (Physics.Raycast(rayOrigin, transform.forward, out wallHit, rayDistance, wallMask))
+        // Seperate direction wall detection
+        // I am using multiple if statements for readability
+        if(TryFindWallInDirection(rayOrigin, transform.forward, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if (Physics.Raycast(rayOrigin, -transform.forward, out wallHit, rayDistance, wallMask))
+        if(TryFindWallInDirection(rayOrigin, -transform.forward, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if (Physics.Raycast(rayOrigin, transform.right, out wallHit, rayDistance, wallMask))
+        if (TryFindWallInDirection(rayOrigin, transform.right, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if (Physics.Raycast(rayOrigin, -transform.right, out wallHit, rayDistance, wallMask))
+        if (TryFindWallInDirection(rayOrigin, -transform.right, rayDistance, out wallHit))
         {
             return true;
         }
 
         wallHit = default;
         return false;
+    }
+
+    /// <summary>
+    /// Check if a surface in the direction is a wall based on the angle.
+    /// </summary>
+    /// <param name="rayOrigin">Starting point</param>
+    /// <param name="rayDirection">Direction to check</param>
+    /// <param name="rayDistance">Max detection distance</param>
+    /// <param name="wallHit"></param>
+    /// <returns>True if the surface is in range of the wall angle range</returns>
+    private bool TryFindWallInDirection(Vector3 rayOrigin, Vector3 rayDirection, float rayDistance, out RaycastHit wallHit)
+    {
+        bool surfaceFound = Physics.Raycast(rayOrigin, rayDirection, out wallHit, rayDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!surfaceFound)
+        {
+            return false;
+        }
+
+        float surfaceAngle = Vector3.Angle(wallHit.normal, Vector3.up);
+
+        return surfaceAngle >= minWallAngle && surfaceAngle <= maxWallAngle;
     }
 
     /// <summary>
@@ -869,16 +921,31 @@ public class PlayerController : MonoBehaviour
         if (isPaused && WorldController.isGamePaused)
         {
             freezePlayer = true;
-            Debug.Log("PlayerController: Player paused");
             return;
         }
 
         freezePlayer = false;
-        Debug.Log("PlayerController: Player unpaused");
+    }
+
+    private void HandleRoundCompleted()
+    {
+        freezePlayer = true;
+        movementInput = Vector2.zero;
+
+        playerRigidbody.linearVelocity = Vector3.zero;
+        playerRigidbody.angularVelocity = Vector3.zero;
     }
 
     public CameraController GetCameraController()
     {
         return GetComponent<CameraController>();
+    }
+
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RoundCompleted -= HandleRoundCompleted;
+        }
     }
 }

@@ -13,19 +13,15 @@ The sliding code is still in `PlayerController` but `Perm_CanSlide` is disabled 
 
 **Next action:** Leave sliding disabled unless it becomes necessary which we will then fix. If we continue using sliding, test the collider height, camera movement, animations and the standing clearance before officially enabling it.
 
-### Wall movement needs regression testing
+### Wall movement requires testing in the grey box
 
 **Status:** Testing required
 
-A frictionless Physics Material fixed the issue where standing next to a wall stopped normal walking. The Rigidbody conversion also changed jumping, wall clinging and wall jumping.
+The wall edge sticking, forced jumping to detach and wall cliding have all been fixed. The player can detach by moving away from the wall and it uses wall momentum which gradually decreases using `wallMomentumHalfLife`.
 
-**Next action:** Test these features with floors, corners, slopes and differently shaped walls. Check and confirm that a normal jump next to a wall is not replaced by a wall cling and that a wall jump will move away from the wall.
+Ground and wall detection now uses angles and the `Environment` layer.
 
-The wall edge sticking, forced jumping to detach from a wall and instant momentum loss when attaching to a wall have all been fixed. The player can move away from a wall more naturally. Momentum moving along the wall will reduxe 'WallMomentumHalfLife'. 'WallClingClimb' is no longer necessary. The vertical cling boost needs to be added back.
-
-**Next action:** Test in multiple situations and test it works in the grey box
-
---END UPDATE--
+**Next action:** Test and update the values of the wall movement in the grey box environment.
 
 ### Rigidbody gravity differs between the prefab and runtime
 
@@ -59,13 +55,6 @@ Both the `MilkThrowing` and `MilkCrate` scripts can schedule the spawned crate f
 
 **Next action:** Give `MilkCrate` ownership of its lifetime. Cancel or change its removal behaviour after a successful delivery.
 
-### Impact checks occur before ignored-collision filtering
-
-**Status:** Open
-
-`MilkCrate` can evaluate an impact as broken before a collision with the player, another projectile or a checkpoint should be ignored.
-
-**Next action:** Ignore some collisions before applying break or bounce logic.
 
 ### Throw physics require balancing
 
@@ -77,17 +66,19 @@ Throw strength, inherited player velocity, angular torque, bounce force, bounce 
 
 ### Final game-complete behaviour is not implemented
 
-**Status:** Not implemented
+**Status:** Testing required
 
-`GameManager` finds the round's checkpoints, counts the successful deliveries, updates the score then raises `RoundCompleted` when no checkpoints are left. Its completion method currently only logs the result and invokes the event. It doeesnt stop the players movement, stop throwing, pause the round timer or show a results screen.
+`GameManager` now runs the round timer and completes the round when all checkpoints are cleared or the timer reaches zero. The round complete event stops the player and camera and shows the results UI.
 
-**Next action:** Create the final round complete system and connect it to `GameManager.RoundCompleted`. The completion state should stop any further gameplay and show the final score and time without being treated as the pause menu.
+**Next action:** Test the game in multiple scenarios. The round must be able to complete each time.
 
-### Round timer and gameplay results UI are missing
+### Round results are prototype UI
 
-**Status:** Not implemented
+**Status:** Accepted for vertical slice
 
-There is no round timer, delivery progress display, score display or end round results screen yet.
+The gameplay UI shows completed deliveries, remaining deliveries and the remaining time. The results screen shows the completion time, deliveries completed, bottles broken and the final scre.
+
+The current designs are temporary and will be replaced when the final UI designs are available.
 
 ### Checkpoint discovery only occurs at startup
 
@@ -103,7 +94,7 @@ There is no round timer, delivery progress display, score display or end round r
 
 ### Checkpoint feedback is provisional
 
-**Status:** Prototype
+**Status:** Accepted for vertical slice
 
 Success and failure visuals and audio work, a failed delivery can be retried. The current assets are development feedback and will be replaced by final effects, audio and UI.
 
@@ -121,12 +112,6 @@ Success and failure visuals and audio work, a failed delivery can be retried. Th
 
 The pause state is static and `WorldController` changes `Time.timeScale`. Scene changes while paused should be tested to make sure when the next scene starts unpaused, at normal speed and with the correct cursor state.
 
-### Direct device input limits future input support
-
-**Status:** Accepted for prototype
-
-The gameplay scripts currently read `Keyboard.current` and `Mouse.current` directly. This is suitable for the keyboard and mouse prototype but makes input rebinding and controller support more difficult.
-
 ## UI
 
 ### PlayerUIController still uses a scene reference
@@ -137,11 +122,11 @@ The gameplay scripts currently read `Keyboard.current` and `Mouse.current` direc
 
 **Next action:** Have the player reference from a future spawning or scene initialisation system, or find it once during startup. Do not search every frame.
 
-### Delivery UI is not implemented
+### Delivery UI requries final design
 
-**Status:** Not implemented
+**Status:** Accepted for vertical slice
 
-The sprint slider works, but the player cant yet see their score, remaining deliveries, round time or final result in the gameplay UI.
+The gameplay UI shows the delivery progress, remaining round time and sprint stamina. The round complete screen shows the results and round informaiton. The assets are temporary and need a final UI design and testing in different resolutions.
 
 ## Deprecated and Postponed Work
 
@@ -151,7 +136,15 @@ The sprint slider works, but the player cant yet see their score, remaining deli
 
 ## Scenes and Builds
 
+- `MainGame` is the current playable vertical slice but only uses the grey box environment and temporary assets.
 - `DevMenu` and `MovementTest` remain development scenes and must be replaced from the final build.
 - The `Assets` folder still require organisation.
 - The final playable scenes, environment testing, hazards and production models are not complete.
 - No automated gameplay tests currently exist.
+
+### RestartTrigger is a prototype
+**Status:** Testing required
+
+`RestartTrigger` restarts the current scene after a countdown when the player is out of bounds by triggering the collider. It assumes the references are assigned and doesnt prevent multiple countdowns from starting.
+
+**Next action:** Add missing reference and repeated trigger protection.

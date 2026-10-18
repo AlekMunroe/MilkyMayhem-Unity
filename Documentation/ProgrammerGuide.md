@@ -10,31 +10,30 @@ This guide explains what each current script does and how the main systems conne
 Keyboard and mouse
         |
         +--> PlayerController ------> Rigidbody movement and parkour
-        |          |
-        |          +---------------> SprintStaminaPercent
-        |                                  |
-        |                                  v
-        |                           PlayerUIController
-        |                                  |
-        |                                  v
-        |                            Sprint UI Slider
         |
         +--> CameraController ------> Player yaw and camera pitch
         |
         +--> MilkThrowing ----------> Thrown or placed MilkCrate
-        |                                  |
-        |                                  v
-        |                           MilkCheckpoint
-        |                                  |
-        |                                  v
-        |                             GameManager
-        |                      Score, progress and round event
+                                           |
+                                           v
+                                    MilkCheckpoint
+                                           |
+                                           v
+                                      GameManager
+                         Checkpoints, score, timer and round state
+                              |             |              |
+                              v             v              v
+                       CheckpointArrow  PlayerUIController  RoundCompleted
+                                                          |       |
+                                                          v       v
+                                                   PlayerController
+                                                   CameraController
+
+WorldController ------------> Pause state, time scale and cursor
         |
-        +--> WorldController -------> Pause state, time scale and cursor
-                    |
-                    +---------------> PlayerController
-                    +---------------> CameraController
-                    +---------------> Pause menu
+        +--------------------> PlayerController
+        +--------------------> CameraController
+        +--------------------> Pause menu
 ```
 
 The scripts currently read `Keyboard.current` and `Mouse.current` directly. We do not have an Input Actions asset or input rebinding system yet.
@@ -70,15 +69,18 @@ The script requires:
 
 - A `Rigidbody` and `CapsuleCollider` on the same GameObject
 - The frictionless player Physics Material on the CapsuleCollider
-- A `GroundCheck` child Transform
-- The Ground and Wall layer masks
+- The `Envionment` layer assigned to the environment mask
+- Working ground and wall angle values
 - A `CameraController` on the player
+- An enabled `GameManager` when the round complete event is used
 
 The old CharacterController version is depreciated. New scripts must use the current Rigidbody `PlayerController` and should not require a `CharacterController`.
 
 Sliding code is still inside this script but `Perm Can Slide` is disabled on the prefab. Sliding is postponed because it is unreliable and not currently required.
 
-When wall clinging, the `PlayerController` moves all movement into the wall, it keeps movement along the wall and will gradually reduces momentum using `wallMomentumHalfLife`. Moving away from the wall will now detach the player from the wall and `PerformWallJump` now starts with the player's remaining velocity before it applies any wall jump forces. `WallClingClimb` is not called by the wall state because it caused the player to stick at the top of a wall. A small upward wall cling boost still needs to be added and tested.
+Ground and wall detection now uses the `Environment` layer and checks angles of surfaces. When wall clinging, the `PlayerController` keeps movement along the wall and gradually refuxes it using `wallMomentumHalfLife`. When moving away from the wall, the wall detatches from the player and `PerformWallJump` starts with the player's remaining velocity before adding wall jump forces. The prototype wall cling boost as been added back. `WallClingClimb` still remains however, it is unused because it caused the player to stick to the top of a wall.
+
+`PlayerController` listens to `GameManager.RoundCompleted` and when the event is raised, it stops the player's velocity and disables any movement.
 
 ## CameraController
 
@@ -86,17 +88,17 @@ When wall clinging, the `PlayerController` moves all movement into the wall, it 
 
 **Responsibility:** Rotates the player horizontally and the camera vertically.
 
-`Cam Object` should use `CamPos`, with `Main Camera` placed underneath it. `WorldController` disables the component while the game is paused. The `WorldController` also controls the cursor rather than the `CameraController`.
+`Cam Object` should use `CamPos` and `Main Camera` placed under it. `WorldController` disables it while the game is paused. `CameraController` listens to the `GameManager.RoundCompleted` state and disables itself when the round completes. The `WorldController` controls the cursor rather than the `CameraController`.
 
 ## PlayerUIController
 
 **Path:** `Assets/Scripts/UI/Gameplay/PlayerUIController.cs`
 
-**Responsibility:** Updates UI connected to the player.
+**Responsibility:** Updates the gameplay and round results UI.
 
-It currently reads `PlayerController.SprintStaminaPercent` and uses it to update the sprint Slider. It checks its references and makes the Slider non interactable. The player reference must still be assigned in each scene.
+It reads `PlayerController.SprintStaminaPercent` and uses it to update the sprint slider. It listens for `CheckpointProgressChanged` and `TimeRemainingChange` to show the completed deliveries, remaining deliveries and time remaining.
 
-The score, remaining deliveries and timer can be added to the gameplay UI later. The pause menu and final results screen should remain as separate UI controllers.
+It also listens to `RoundCompleted` and shows if the round was completed or the timer ran out.
 
 ## WorldController
 
@@ -153,7 +155,7 @@ It currently includes:
 - A function which disables bouncing for placed crates
 - A function which allows a checkpoint to stop and position the crate
 
-Scoring should not be added to `MilkCrate`. This script only stores the condition of the crate. `MilkCheckpoint` decides if the delivery was successful.
+`MilkCrate` changes between its default and broken object when it breaks and it will play a temporary breaking sound. It tells the `GameManager` when a bottle is broken but doesnt choose if the delivery was successful. `MilkCheckpoint` is responsible for this.
 
 ## MilkCheckpoint
 
@@ -179,7 +181,7 @@ The checkpoint Collider must have `Is Trigger` enabled. The success visual, fail
 
 **Path:** `Assets/Scripts/World/GameManager.cs`
 
-**Responsibility:** Tracks checkpoint progress and the score for the current round.
+**Responsibility:** Tracks checkpoint progress, score, broken bottles, round timer and round completion for the current round.
 
 Important public parts:
 
@@ -188,13 +190,48 @@ public static GameManager Instance
 public int Score
 public int TotalCheckpoints
 public int RemainingCheckpoints
+public IReadOnlyList<MilkCheckpoint> Checkpoints
+public float TimeRemaining
+public float CompletionTime
+public int BottlesBroken
 public event Action<int> ScoreChanged
 public event Action<int, int> CheckpointProgressChanged
+public event Action<float> TimeRemainingChanged
 public event Action RoundCompleted
 public bool RegisterCheckpointCleared(MilkCheckpoint checkpoint, int scoreAmount)
+public void CountBrokenBottles()
 ```
 
-When the scene starts, `GameManager` finds every checkpoint under its assigned checkpoint container. Each checkpoint can only report one successful delivery. When there are no checkpoints remaining, it raises `RoundCompleted`.
+When the scene starts, the `GameManager` checks every checkpoint assigned and starts the round timer. Each checkpoint can only give one successful delivery.
+
+The round will finish when every checkpoint is complete or the time left reaches zero. `RoundCompleted` tells the player and camera that the game is complete. The `GameManager` then enables the `RoundCompleteUI` and tells the `WorldController` to enable the mouse.
+
+`Checkpoints` are exposed as an `IReadOnlyList` so the `checkpointArrow` can read the checkpoints without editing the list.
+
+## CheckpointArrow
+**Path:** `Assets/Scripts/Player/CheckpointArrow.cs`
+
+**Responsibility:** It points to the closest available checkpoint.
+
+The script reads `GameManager.Checkpoints` and ignores the completed checkpoints. It rotates the assigned arrow object to the closest available checkpoint and hides when no checkpoints are available.
+
+## RestartTrigger
+
+**Path:** `Assets/Scripts/World/RestartTrigger.cs`
+
+**Responsibility:** Restarting the current scene when the player enters the trigger.
+
+It shows a five second countdown using TMP text and reloads the current scene. The countdown uses unscaled time so it can continue to work if the normal game has stopped.
+
+This is currently a prototype safety system.
+
+## RoundCompleteMenu
+
+**Path:** `Assets/Scripts/UI/Menus/RoundCompletionMenu.cs`
+
+**Responsibility:** Controls the buttons on the round coplete UI
+
+It can reload the current scene or load the main menu. The main menu index must match the Build Settings.
 
 ### Game Completion is Incomplete
 
