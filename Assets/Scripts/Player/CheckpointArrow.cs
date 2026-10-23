@@ -14,20 +14,8 @@ public class CheckpointArrow : MonoBehaviour
 
     private void Start()
     {
-        if(arrowObjectOrigin == null)
-        {
-            Debug.LogError("CheckpointArrow: The arrow object isnt assigned");
-
-            enabled = false;
-            return;
-        }
-
-        if(GameManager.Instance == null)
-        {
-            Debug.LogError("CheckpointArrow: No GameManager exists in the scene");
-
-            enabled = false;
-        }
+        CheckNull(arrowObjectOrigin);
+        CheckNull(GameManager.Instance);
     }
 
     void Update()
@@ -88,5 +76,15 @@ public class CheckpointArrow : MonoBehaviour
         }
 
         return closestCheckpoint;
+    }
+
+    private void CheckNull(UnityEngine.Object reference)
+    {
+        if (reference == null)
+        {
+            Debug.LogError(GetType().Name + ": A reference is not assigned", this);
+
+            enabled = false;
+        }
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(BoxCollider))]
 public class MilkCheckpoint : MonoBehaviour
 {
     [Header("<color=red>Development</color>")]

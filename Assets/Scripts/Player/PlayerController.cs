@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Events;
+using Unity.VisualScripting;
 
 /// <summary>
 /// Using Unity's Input System and Rigidbody to move the player.
@@ -170,9 +171,12 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-        if(GameManager.Instance != null)
+        if(GameManager.Instance == null)
         {
-            GameManager.Instance.RoundCompleted += HandleRoundCompleted;
+            Debug.LogError("PlayerController: GameManager does not exist.");
+
+            enabled = false;
+            return;
         }
     }
 
@@ -946,6 +950,16 @@ public class PlayerController : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.RoundCompleted -= HandleRoundCompleted;
+        }
+    }
+
+    private void CheckNull(UnityEngine.Object reference)
+    {
+        if (reference == null)
+        {
+            Debug.LogError(GetType().Name + ": A reference is not assigned", this);
+
+            enabled = false;
         }
     }
 }
