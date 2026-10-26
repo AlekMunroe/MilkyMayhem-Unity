@@ -350,7 +350,16 @@ Create the first playable vertical slice by connecting the exiting mechanics and
 - Testing and updating values.
 - Explain the model scale and pivot requirements to the 3D designers.
 
+## 26 October 2026 Updated Player Controller and Milk Crate
+- Readded Wall Cling Boost, Air Strafing from previous commits.
+- Reimplemented Sliding, now it preserves your current momentum to allow faster movement on the ground.
+- Fixed Milk Crates breaking when they interact with the checkpoints while at high velocity.
+- Adjusted default values of the Player Controller.
 
+## Next steps
+- Refine values for smooth player experience.
+- Add crouching to sliding for more dynamic player skill expression.
+- Add abilities for more gameplay complexity.
 
 ## Entry Template
 
