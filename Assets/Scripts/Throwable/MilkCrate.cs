@@ -12,7 +12,9 @@ public class MilkCrate : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float retainedAngularVelocity = 0.5f;
 
     [Header("Lifetime")]
-    [SerializeField, Min(0.1f)] private float maximumLifetime = 10f;
+    [SerializeField, Min(0.1f)] private float maxLifetime = 10f;
+    [SerializeField, Min(0.1f)] private float maxIdleLifetime = 2f;
+    [SerializeField, Min(0.1f)] private float breakDelay = 0.5f;
 
     [Header("Collision")]
     [SerializeField] private LayerMask bounceSurfaceMask = ~0;
@@ -27,10 +29,11 @@ public class MilkCrate : MonoBehaviour
     private Rigidbody projectileRigidbody;
     private int remainingBounces;
     private float nextAllowedBounceTime;
-    private Vector3 velocityBeforePhysicsUpdate;
 
-    [Header("Delivery")]
-    [SerializeField, Min(0f)] private float breakingImpactSpeed = 15f;
+    [Header("Debug")]
+    [SerializeField] private float currentLifetime;
+    [SerializeField] private float currentIdleLifetime;
+    private Vector3 velocityBeforePhysicsUpdate;
 
     public bool IsBroken { get; private set; }
     public bool IsLanded { get; private set; }
@@ -105,8 +108,8 @@ public class MilkCrate : MonoBehaviour
 
     private void Start()
     {
-        // Remove every projectile that misses every surface and checkpoint
-        Destroy(gameObject, maximumLifetime);
+        currentLifetime = maxLifetime;
+        currentIdleLifetime = maxIdleLifetime;
 
         if (audioSource != null)
         {
@@ -120,6 +123,8 @@ public class MilkCrate : MonoBehaviour
         {
             velocityBeforePhysicsUpdate = projectileRigidbody.linearVelocity;
         }
+
+        UpdateLifetime();
     }
 
     /// <summary>
@@ -129,11 +134,6 @@ public class MilkCrate : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         GameObject collisionRoot = collision.transform.root.gameObject;
-
-        if(collision.relativeVelocity.magnitude >= breakingImpactSpeed)
-        {
-            MarkBroken();
-        }
 
         // Stop from collising with the player or other projectiles
         if(collisionRoot.CompareTag("Player") || collisionRoot.CompareTag("Projectile"))
@@ -199,6 +199,36 @@ public class MilkCrate : MonoBehaviour
         return (bounceSurfaceMask.value & layerValue) != 0;
     }
 
+    private void UpdateLifetime()
+    {
+        if (IsBroken)
+        {
+            return;
+        }
+
+        if (projectileRigidbody == null)
+        {
+            return;
+        }
+
+        if (projectileRigidbody.linearVelocity.sqrMagnitude < 0.01f)
+        {
+            currentIdleLifetime -= Time.fixedDeltaTime;
+
+            if(currentIdleLifetime <= 0f)
+            {
+                MarkBroken();
+            }
+        }
+
+        if (currentLifetime <= 0f)
+        {
+            MarkBroken();
+        }
+
+        currentLifetime -= Time.fixedDeltaTime;
+    }
+
     /// <summary>
     /// Mark the milk as broken so it cannot complete its delivery
     /// </summary>
@@ -222,6 +252,8 @@ public class MilkCrate : MonoBehaviour
         {
             GameManager.Instance.CountBrokenBottles();
         }
+
+        Destroy(gameObject, breakDelay);
     }
 
     /// <summary>

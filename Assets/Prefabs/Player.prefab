@@ -143,25 +143,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0b11580fb5763ef7ae27ea955dcbf47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RBPlayerController
-  perm_canSprint: 1
+  perm_canSprint: 0
   perm_canJump: 1
   perm_canParkourJump: 1
-  perm_canWalk: 1
+  perm_canGroundMove: 1
+  perm_canWallMove: 1
   perm_canAirMove: 1
-  perm_canSlide: 0
-  speed: 6
-  gravity: -20
-  maxAirSpeed: 1
-  airDrag: 1.5
-  groundAcceleration: 45
-  groundDeceleration: 55
+  perm_canSlide: 1
+  speed: 25
+  gravity: -45
+  maxAirSpeed: 7
+  groundAcceleration: 140
+  groundDeceleration: 190
   sprintSpeed: 10
   maxSprintStamina: 2
   sprintDrainSpeed: 1
   sprintRegenerationSpeed: 0.75
   sprintRegenerationDelay: 1
-  jumpHeight: 5
-  forwardJumpBoost: 2
+  jumpHeight: 7
+  forwardJumpBoost: 3
   coyoteTime: 0.15
   jumpBufferTime: 0.15
   environmentMask:
@@ -173,19 +173,18 @@ MonoBehaviour:
   maxWallAngle: 110
   jumpReleaseMultiplier: 0.5
   wallCheckDistance: 0.25
-  maxWallClingTime: 1
-  wallSlideSpeed: 3
+  maxWallClingTime: 0.5
   wallClingBoost: 10
+  wallSlideSpeed: 3
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
-  wallMomentumHalfLife: 0.15
+  wallMomentumHalfLife: 20
   canWallClimb: 0
-  wallClimbVerticalBoost: 2
+  wallClimbVerticalBoost: 7.5
   wallClimbBoost: 5
-  wallJumpHeight: 2.5
-  wallJumpForce: 8
-  wallReattachDelay: 0.25
-  slideSpeed: 12
+  wallJumpHeight: 6
+  wallJumpForce: 10
+  wallReattachDelay: 0.3
   slideDuration: 1.2
   slideHeight: 1
   slideCooldown: 0.5
@@ -487,7 +486,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -1311,7 +1310,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -1362,7 +1361,6 @@ MonoBehaviour:
   throwStrength: 12
   playerVelocityMultiplier: 1
   throwMaxCooldown: 0.5
-  projectileLifetime: 10
   projectileSpawnPointOffset: {x: 0, y: -0.15, z: 1}
   randomTorqueStrength: 1
   projectilePrefab: {fileID: 1435584939976740019, guid: 9134c84a8bc894679aac1fa8f3e6cff1, type: 3}

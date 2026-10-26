@@ -64,15 +64,6 @@ public class MilkCheckpoint : MonoBehaviour
             return;
         }
 
-        bool deliveryFailed = milkCrate.IsBroken || milkCrate.CurrentSpeed > maximumSafeDeliverySpeed;
-
-        if (deliveryFailed)
-        {
-            milkCrate.MarkBroken();
-            ShowFailedDelivery();
-            return;
-        }
-
         if(GameManager.Instance == null)
         {
             Debug.LogError("MilkCheckpoint: No GameManager exists");
