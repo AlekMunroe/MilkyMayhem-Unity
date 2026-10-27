@@ -2,7 +2,7 @@
 
 ## Active Player Prefab
 
-The active Rigidbody player is stored in `Assets/Prefabs/Player.prefab`. Make any changes in Prefab Mode so every scene receives the same setup.
+The active Rigidbody player is stored in `Assets/Prefabs/Gameplay/Player.prefab`. Make any changes in Prefab Mode so every scene receives the same setup.
 
 The old CharacterController player is deprecated and stored in `Assets/Prefabs/_Depreciated/Player.prefab`. Do not use it in any scenes and do not delete it until the group has reviewed the migration.
 
@@ -61,17 +61,28 @@ The CapsuleCollider should fit the standing player and be centred on the root ob
 
 - Controlled ground acceleration, deceleration and maximum speed
 - Air acceleration, air drag and retained momentum
-- Sprinting with stamina drain and regeneration
+- Air straginf and retained airborne momentum
 - Parkour jump boost, coyote time, jump buffering and variable jump height
 - Wall detection, temporary wall clinging, wall sliding and wall jumping
-- Pause integration through `WorldController`
-- Public stamina data for `PlayerUIController`
+- Wall detachment
+- Pause and round completion integration
+- Perminant controls to disable features
 
 ### Permanent Feature Controls
 
-The `Perm Can` fields allow incomplete features to be blocked. The current prefab should have normal movement, sprinting and jumping enabled. `Perm Can Slide` is currently disabled because sliding is postponed and unreliable.
+The `Perm Can` fields allow incomplete features to be disabled without deleting the code.
 
-Do not enable sliding simply to test another feature. If it is restored, document the change and retest collider height, camera height, animation reset and standing clearance.
+The prefab currently has:
+
+- Sprinting disabled
+- Normal jumping enabled
+- Parkour jumping enabled
+- Ground movement enabled
+- Wall movement enabled
+- Air movement enabled
+- Sliding enabled
+
+Do not change any values without testing the complete player prefab.
 
 ### Ground and Wall Checks
 
@@ -85,6 +96,8 @@ Do not enable sliding simply to test another feature. If it is restored, documen
 The current system uses the normal of the surface to choose if its a ground or a wall. This will allow one environment object to contain both walkable and climbable surfacine without requiring seperate Ground and Wall layers.
 
 The current wall movement keeps mometum moving along the wall and gradually reduces it using `wallMomentumHalfLife`. `wallDetachSpeed` controls how long it takes the player to detach from a wall. `wallReattachDelay` stops the player from sttaching to a wall immediately after detaching.
+
+Floor only objects are sometimes treated as walls when the collider has enough surgace angle. Do not add another ground only layer until the next update is completed.
 
 ## CameraController Setup
 
@@ -105,6 +118,8 @@ Horizontal look rotates the player. Vertical look rotates the camera's pivot. `W
 5. Make sure the checkpoint is assigned in the `GameManager`.
 
 The arrow reads the checkpoints using `GameManager.Checkpoints`. It then points to the closes available checkpoint and hides when there are no checkpoints available.
+
+The checkpoint arrow is in the process of being depreciated. This is to be replaced with a UI based compass.
 
 ## Milk Throwing Setup
 
@@ -153,8 +168,8 @@ Before committing player or scene changes, verify:
 - WASD movement accelerates and stops without unwanted sliding.
 - The player can still move while touching a wall.
 - Mouse look works and vertical rotation is clamped.
-- Shift increases movement speed, drains stamina and later regenerates it.
-- Sprinting continues correctly during a jump.
+- Ctrl starts sliding when the player is grounded and moving.
+- Sliding restores the capsule and camera values.
 - Air momentum remains when movement input is released.
 - Normal, coyote time, buffered and shortened jumps behave correctly.
 - A jump beside a wall is not incorrectly cancelled by wall clinging.
@@ -177,3 +192,7 @@ Before committing player or scene changes, verify:
 - Running out of time shows the failed round results.
 - The result screen shows completion time, deliveries, broken bottles and the player's score.
 - Restarting restarts the gameplay scene.
+- Air input does not immediately change direction with full velocity.
+- Wall cling vertical boost doesnt allow uncontrolled climbing.
+- The player doesnt move higher when returning to a wall after jumping away.
+- Starting another game after going back to the main menu resets `Time.timeScale`.

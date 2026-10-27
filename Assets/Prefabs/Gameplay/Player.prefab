@@ -152,7 +152,7 @@ MonoBehaviour:
   perm_canSlide: 1
   speed: 25
   gravity: -45
-  maxAirSpeed: 7
+  maxAirSpeed: 1
   groundAcceleration: 140
   groundDeceleration: 190
   sprintSpeed: 10

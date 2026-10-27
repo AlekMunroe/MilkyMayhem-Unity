@@ -617,7 +617,6 @@ public class PlayerController : MonoBehaviour
         if ((touchingWall || canWallClimb) && storedWallNormal == Vector3.zero)
         {
             storedWallNormal = wallNormal;
-            Debug.Log(storedWallNormal);
         }
         else if (!canWallClimb)
         {

@@ -26,6 +26,8 @@ public class MainMenuController : MonoBehaviour
         CloseAllSecondaryPanels();
 
         UpdateGameVersionText();
+
+        ResetGameSpeed();
     }
 
     void Update()
@@ -133,5 +135,13 @@ public class MainMenuController : MonoBehaviour
         {
             gameVersionText.text += "\nDevelopment Build";
         }
+    }
+
+    /// <summary>
+    /// Reset the game time to the default value
+    /// </summary>
+    void ResetGameSpeed()
+    {
+        Time.timeScale = 1f;
     }
 }

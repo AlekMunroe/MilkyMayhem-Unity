@@ -5,23 +5,25 @@ Update this file when an issue is found, fixed or deliberately postponed.
 
 ## Rigidbody Player
 
-### Sliding is deliberately disabled
+### Sliding requires more testing
 
-**Status:** Postponed
+**Status:** Testing required
 
-The sliding code is still in `PlayerController` but `Perm_CanSlide` is disabled on the player prefab because sliding is currently unreliable and is not required for the prototype.
+The reimplementation of sliding is back. It keeps the existing momentum. `PermCanSlide` is enabled on the player and CTRL starts a slide when the player is grounded.
 
-**Next action:** Leave sliding disabled unless it becomes necessary which we will then fix. If we continue using sliding, test the collider height, camera movement, animations and the standing clearance before officially enabling it.
+**Next action:** Test the collider, camera movement, animations and cooldown.
 
 ### Wall movement requires testing in the grey box
 
 **Status:** Testing required
 
-The wall edge sticking, forced jumping to detach and wall cliding have all been fixed. The player can detach by moving away from the wall and it uses wall momentum which gradually decreases using `wallMomentumHalfLife`.
+The current player has a vertical wall cling boost, wall sliding, wall detachment, retained wall momentum, air strafind and wall jumping. Ground, wall and air movement now have seperate perminant controls.
 
-Ground and wall detection now uses angles and the `Environment` layer.
+A problem exists when the player jumps away from a wall, they can move back towards it at a higher location.
 
-**Next action:** Test and update the values of the wall movement in the grey box environment.
+Floor only objects can sometimes be trested as walls due to the `Environment` layer.
+
+**Next action:** Investigate wall movement problems. Retest wall edges and corners for floor only object. Test wall jumping and airborne direction changes.
 
 ### Rigidbody gravity differs between the prefab and runtime
 
@@ -49,12 +51,13 @@ Acceleration, deceleration, air control, sprinting, jump forces, wall behaviour 
 
 ### Projectile lifetime has two owners
 
-**Status:** Cleanup required
+**Status:** Partially complete
 
-Both the `MilkThrowing` and `MilkCrate` scripts can schedule the spawned crate for destruction. This makes the lifetime behaviour harder to trace and means a crate landed successfully can disappear later.
+`MilkCrate` now is the only script responsible for projectile lifetime. `MilkThrowing` doesnt schedule thrown or plaed crates for destruction.
 
-**Next action:** Give `MilkCrate` ownership of its lifetime. Cancel or change its removal behaviour after a successful delivery.
+Successful delviery crates are made kinematic with no velocity. The idle and max lifetime checks continue and could cause delivery crates to be broken or destroyed.
 
+**Next action:** Decide if delivered crates should stay visible or disappear cleanly after a delay.
 
 ### Throw physics require balancing
 
@@ -63,14 +66,6 @@ Both the `MilkThrowing` and `MilkCrate` scripts can schedule the spawned crate f
 Throw strength, inherited player velocity, angular torque, bounce force, bounce count, safe landing speed and placement distance are prototype values. Current values work for testing but checks for the final world.
 
 ## Checkpoints, Scoring and Round Completion
-
-### Final game-complete behaviour is not implemented
-
-**Status:** Testing required
-
-`GameManager` now runs the round timer and completes the round when all checkpoints are cleared or the timer reaches zero. The round complete event stops the player and camera and shows the results UI.
-
-**Next action:** Test the game in multiple scenarios. The round must be able to complete each time.
 
 ### Round results are prototype UI
 
@@ -96,7 +91,9 @@ The current designs are temporary and will be replaced when the final UI designs
 
 **Status:** Accepted for vertical slice
 
-Success and failure visuals and audio work, a failed delivery can be retried. The current assets are development feedback and will be replaced by final effects, audio and UI.
+Crates entering checkpoints now comlete deliveries without checking the impact speed. The old high speed function has now been removed. Successful feedback still work but failed fields exist with no way to fail.
+
+**Next action:** Decide if we can fail deliveries in any way.
 
 ## Pause and Input
 
@@ -105,12 +102,6 @@ Success and failure visuals and audio work, a failed delivery can be retried. Th
 **Status:** Open
 
 `WorldController` expects an active `PlayerController`, its `CameraController`, the pause menu object and a keyboard. An incorrect scene setup might produce missing reference errors.
-
-### Static pause state needs scene-change testing
-
-**Status:** Open
-
-The pause state is static and `WorldController` changes `Time.timeScale`. Scene changes while paused should be tested to make sure when the next scene starts unpaused, at normal speed and with the correct cursor state.
 
 ## UI
 
@@ -148,3 +139,21 @@ The gameplay UI shows the delivery progress, remaining round time and sprint sta
 `RestartTrigger` restarts the current scene after a countdown when the player is out of bounds by triggering the collider. It assumes the references are assigned and doesnt prevent multiple countdowns from starting.
 
 **Next action:** Add missing reference and repeated trigger protection.
+
+### Negative scale crate BoxCollider warnings
+
+**Status:** Waiting for final environment model
+
+Some grey box objects are on a negative scale. Unity forces the BoxCollider size to be positive and warns of this error.
+
+**Next action:** 3D designers to send the correct scale and collider setup for the vianl environment moels.
+
+Warnings can be ignored until we recieve the updated model.
+
+### The checkpoint arrow interferes with wall movement
+
+**Status:** Replacement planned
+
+The temporary 3D checkpoint arrow is attached to the player and interfered with wall jumping. A UI compass is planned.
+
+**Next action:** Replace the 3D arrow with the UI compass to point to a general delivery area and hide it when the player searches in the area.

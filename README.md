@@ -2,11 +2,11 @@
 
 Milky Mayhem is a first-person parkour delivery game. The player controls a milkman who must move quickly through the environment, deliver milk and avoid hazards while trying to achieve a high score.
 
-The project is in the grey box prototyping stage. The player now uses a Rigidbody based `PlayerController` rather than the old CharacterController based one. With walking jumping, sprinting, airborne movement and prototype wall jumping. The previous CharacterController player has been depreciated. The sliding code is available but deliverately disabled.
+The project is in the vertical slice development stage. The player uses a Rigidbody based `PlayerController rather than the old CharacterController based one. The player has ground modement, jumping, airborne movement, wall movement and sliding. Sprinting is now depreciated.
 
-A complete prototype of the delivery loop is now implemented. The player can throw milk with the left mouse button or place milk with the right mouse button. Milk crates bouce and break from large impacts and show temporary visual and audio to the player. Successful checkpoints now show their score and the delivery progress is shared to the `GameManager`. The round will finish by completing every delivery or running out of time. The results screen will now show the completion time, delvieries complete, bottles broken and the player's final score.
+A complete prototype of the delivery loop is now implemented. The player can throw milk with the left mouse button or place milk with the right mouse button. Milk crates bouce and are removed after their lifetime expires in `MilkCrate`. Checkpoints aff score when milk is successfully delivered and a round finishes once every delivery is completed or the timer ends.
 
-The Rigidbody wall movement has not been updated and tested. The player will now detach from the wall when the player moves away. The momentum moving along the wall will gradually reduce and any momentum that is left is stored and used in the next wall jump. Ground and wall detection now uses angles over the seperate Ground and Wall layers. Surfaces the player will walk or climb on must use the new `Environment` layer.
+The project now includes Main menu, options, scores and credits. It has updated UI to match the theme of the game. 
 
 ## Requirements
 
@@ -22,10 +22,10 @@ Open the project using the exact Unity version above. Opening and saving it in a
 1. Clone the repository.
 2. Open the project folder through Unity Hub using Unity `6000.3.19f1`.
 3. Allow Unity to restore the packages listed in `Packages/manifest.json`.
-4. Open `Assets/Scenes/_testing/DevMenu.unity` to test scene loading, or open `Assets/Scenes/MainGame.unity` to test the prototype gameplay loop. Use `Assets/Scenes/_testing/MovmenetTest.unity' to work directly on movement.
-5. Enter Play mode and test the controls below.
+4. Open `Assets/Scenes/MainMenu.unity` to test the full main menu or open `Assets/Scenes/MainGame.unity` to test the current gameplay loop.
+5. Enter Play Mode and test the controls.
 
-`DevMenu`, `MainGame` and `MovementTest` are included in Build Settings. `DevMenu` is first and therefore opens when a development build starts. Its buttons load the available scenes.
+`MainMenu` is the first scene in the build settings. `MainGame`, `DevMenu` and `MovementTest` are also included for the gameplay and dev testing.
 
 ## Current Controls
 
@@ -33,12 +33,13 @@ Open the project using the exact Unity version above. Opening and saving it in a
 | --- | --- |
 | Move | W A S D |
 | Look | Mouse |
-| Sprint | Left or Right Shift |
 | Jump or wall jump | Space |
 | Throw milk | Left Mouse Button |
 | Place milk without bouncing | Right Mouse Button |
-| Slide | Left or Right Ctrl while moving on the ground (currently disabled) |
+| Slide | Left or Right Ctrl while moving on the ground |
 | Pause or resume | Escape |
+
+Sprinting is being depreciated.
 
 ## Documentation
 
@@ -50,11 +51,11 @@ Open the project using the exact Unity version above. Opening and saving it in a
 
 ## Current Priorities
 
-1. Test the complete gameplay loop and fix any bugs which stop a round from being completed.
-2. Stop the pause controls from resuming the gameplay after the round has finished.
-3. Update the Rigidbody's values for movement in the grey box.
-4. Test the `MainGame` scene in multiple scenarios.
-5. Create a working development build for the game demonstration.
-6. Continue organising the imported models and UI.
-7. Replace the temporary UI, models and audio with the final assets.
-8. Add hazards and other optional gameplay features.
+1. Decide how the crates should be removed.
+2. Add a round start hub inside the incomplete Milk Store and gameplay will start once exited.
+3. Create multiple checkpoint routes and randomly choose one when the round starts.
+4. Reset the round state correctly when starting a new round.
+5. Replace the 3D Checkpoint Arrow with a new UI compass. Include delivery search areas.
+6. Test repeating rounds, saved scores and route randomisation.
+7. Fix any final bugs relating to the player.
+8. Finalise the UI design.

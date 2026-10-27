@@ -24,10 +24,15 @@ Keyboard and mouse
                               |             |              |
                               v             v              v
                        CheckpointArrow  PlayerUIController  RoundCompleted
-                                                          |       |
-                                                          v       v
-                                                   PlayerController
-                                                   CameraController
+                                                          |       |     |
+                                                          v       v     v
+                                                   PlayerController   ScoreSaveSystem
+                                                   CameraController   |
+                                                                      v
+                                                                    PlayerPrefs JSON
+                                                                      |
+                                                                      v
+                                                                    ScoresMenuController
 
 WorldController ------------> Pause state, time scale and cursor
         |
@@ -49,12 +54,16 @@ Current features:
 - Rigidbody movement during the physics update
 - Ground acceleration, deceleration and a maximum speed
 - Air acceleration, air drag and retained momentum
-- Sprinting with stamina drain and regeneration
 - A forward parkour jump boost
 - Coyote time, jump buffering and variable jump height
 - Wall detection, temporary wall clinging, wall sliding and wall jumping
-- Pause support through `WorldController`
+- Pause and round completion integration
+- Momentum based sliding
 - Permanent controls which can disable incomplete features
+
+Sprinting is in the script but is disabled on the player prefab. Sprinting is being depreciated. Sliding has been reimplemented and `PermCanSlide` is enabled. The slide uses the player's current Rigidbody velocity.
+
+Ground, wall and air movement use `UpdateGroundMovement`, `UpdateWallMovement` and `UpdateAirMovement`. Air direction changes are limited by `MaxAirSpeed`.
 
 Important public parts:
 
@@ -154,21 +163,21 @@ It currently includes:
 - Separate broken and landed states
 - A function which disables bouncing for placed crates
 - A function which allows a checkpoint to stop and position the crate
+- A seperate idle lifetime
 
-`MilkCrate` changes between its default and broken object when it breaks and it will play a temporary breaking sound. It tells the `GameManager` when a bottle is broken but doesnt choose if the delivery was successful. `MilkCheckpoint` is responsible for this.
+`MilkCrate` is now the only owner if projectile lifetime. `MilkThrowing` no longer destroys the projectiles after a seperate delay.
+
+When the lifetime or idle timer finishes, milk crates are marked as broken. This tells the `GameManager` it is destroyed and they will be destroyed after `breakDelay`. Successful delivery crates still become destroyed and this logic must be fixed for its removal behaviour.
 
 ## MilkCheckpoint
 
 **Path:** `Assets/Scripts/Throwable/MilkCheckpoint.cs`
 
-**Responsibility:** Checks a milk delivery and shows success or failure feedback.
+**Responsibility:** Registers a milk delivery and shows success or failure feedback.
 
 It currently:
 
 - Finds a `MilkCrate` from its collider or parent object
-- Fails milk which is broken or moving above the safe delivery speed
-- Shows failure feedback without clearing the checkpoint
-- Allows the player to retry as many times as required
 - Stops and moves successful milk onto the landing point
 - Replaces failure feedback with success feedback
 - Plays success or failure audio
@@ -208,6 +217,57 @@ The round will finish when every checkpoint is complete or the time left reaches
 
 `Checkpoints` are exposed as an `IReadOnlyList` so the `checkpointArrow` can read the checkpoints without editing the list.
 
+## ScoreSaveSystem
+
+**Path:** `Assets/Scripts/SavingSystem/ScoreSaveSystem.cs`
+
+**Responsibility** Save the result when `GameManager.RoundCompleted` is called.
+
+It saves the date, score, amount of completed deliveries, total deliveries, broken bottles, completion time and round number into PLayerPref with JSON using the `SavedRoundResults` key.
+
+Results are stored by their total score and the stored list can have a maximum of 50 games. Route number is currently assigned in the inspecor and will only stay as `1` until the route selection system is created.
+
+## ScoresMenuController
+
+**Path:** `Assets/Scripts/SavingSystem/ScoresMenuController.cs`
+
+**Responsibility:** Shows the saved results in the scores panel of the Main Menu.
+
+The controller refreshes when the scores panel is active. It creates a score row prefab under a Vertical Layour Group and shows the highest results. It shows a no scores message when no scores are saved.
+
+Each score row prefab requires these child objects:
+
+- `DateText`
+- `ScoreText`
+- `DeliveriesText`
+- `BrokenText`
+- `TimeText`
+- `RouteText`
+
+## GameSettingsController
+
+**Path:** `Assets/Scripts/MainMenu/GameSetingsController.cs`
+
+**Responsibility:** Applys, cancel, resore and save the game settings
+
+Displays all settings and saves the values as playerprefs.
+
+Some values are not connected to the gameplay systems yet.
+
+Audio uses the exposed mixer parameters:
+
+- `MasterVolume`
+- `MusicVolume`
+- `SoundEffectsVolume`
+
+## MainMenuController
+
+**Path:** `Assets/Scripts/MainMenu/MainMenuController.cs`
+
+**Responsibility:** Opens the main menu panels and starts the game.
+
+It also resets `Time.timeScale` in the start function for when the player returns from the game, the paused state does not carry over.
+
 ## CheckpointArrow
 **Path:** `Assets/Scripts/Player/CheckpointArrow.cs`
 
@@ -233,9 +293,11 @@ This is currently a prototype safety system.
 
 It can reload the current scene or load the main menu. The main menu index must match the Build Settings.
 
-### Game Completion is Incomplete
+### Round Completion and Resetting
 
-The `RoundCompleted` event exists but the actual game complete system has not been made yet. Completing every checkpoint currently does not stop the player, stop throwing, stop a timer or show the results screen. A future game complete or results system should listen to this event and perform these actions.
+The current round completion system stops the timer and calls `RoundCompleted`. It stops the player and camera then opens the results UI.
+
+Restarting currently reloads `MainGame`. A dedicated reset system would work much better in the future.
 
 ## PauseMenuController
 
@@ -243,7 +305,7 @@ The `RoundCompleted` event exists but the actual game complete system has not be
 
 **Responsibility:** Controls the pause menu buttons.
 
-It resumes the game through `WorldController`, shows or hides the return confirmation and loads the selected menu scene. It currently returns to the development menu. This will need changing when a final main menu exists.
+It resumes the game through `WorldController`, shows or hides the return confirmation and loads the selected menu scene. It returns to the main menu scene. The `MainMenuController` and `WorldController` reset the game's speed when the scenes start.
 
 ## Development Tools
 

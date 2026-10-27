@@ -88,25 +88,40 @@ The pivot does not always need to be in the exact centre. A bottom centre pivot 
 Use the existing folders and only create a new category when it is required:
 
 ```text
-Assets
 ├── Animations
-│   └── Character
+│   └── UI
 ├── Audio
+│   ├── BackgroundMusic
+│   ├── Gameplay
+│   └── UI
+├── Fonts
+├── Imported
 ├── Materials
+├── Models
+├── Prefabs
+│   ├── _Depreciated
+│   ├── _Dev
+│   ├── Gameplay
+│   └── UI
 ├── Scenes
 │   ├── _testing
-│   └── Gameplay
+│   ├── MainGame
+│   └── MainMenu.unity
 ├── Scripts
 │   ├── _Dev
+│   ├── MainMenu
 │   ├── Player
+│   ├── SavingSystem
 │   ├── Throwable
 │   ├── UI
-│   │   └── Gameplay
+│   │   ├── Gameplay
+│   │   └── Menus
 │   └── World
-└── Prefabs
+└── Textures
+    └── UI
 ```
 
-Test scenes should go in `Assets/Scenes/_testing`. Final gameplay scenes should not be stored in the `_testing` folder.
+Test scenes should go in `Assets/Scenes/_testing`. The gameplay prefabs belong in `Assets/Prefabs/Gameplay`. Mian menu scripts belong in `Assets/Scripts/MainMenu` and score saving scripts belong in `Assets/Scripts/SavingSystem`.
 
 Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`. Development only scripts and prefabs belong in `_Dev` folders and should not be used as final player UI or gameplay content.
 
@@ -120,7 +135,7 @@ Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`
 
 The old CharacterController player and the empty `EventHandler` are currently stored in `_Depreciated` folders. They are not part of the current game.
 
-Sliding is postponed rather than depreciated. Its code is still part of the current Rigidbody `PlayerController` but `Perm Can Slide` is disabled.
+Sprinting is depreicated. Its code is still part of the `PlayerController` but `Perm Can Sprint` is disabled.
 
 ## Naming
 
@@ -155,6 +170,8 @@ Objects used by the player's ground and wall movement must:
 - Have surfaces with angles which fit the PlayerController's ground or wall angle ranges.
 
 Do not use seperate Ground or Wall laters for the player. The current `PlayerController` uses the normal angle of surfaces to choose if it it a ground or wall. One environment object can now act as botn a walkable and climbable surface.
+
+Do not use negative scale on the objects which require BoxColliders. Unity forces the colliders size to be positive and it can cause unexpected results. Apply the scale in the 3D modelling software before exporting the models.
 
 After importing or changing the environment, test walking, slopes, jumping next to walls, wall clinging, wall detachment and wall jumping.
 

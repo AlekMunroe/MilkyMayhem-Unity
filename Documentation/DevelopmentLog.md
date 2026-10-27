@@ -350,7 +350,186 @@ Create the first playable vertical slice by connecting the exiting mechanics and
 - Testing and updating values.
 - Explain the model scale and pivot requirements to the 3D designers.
 
+## 20 October 2026 Main Menu and Settings
 
+### Aim
+
+To create the first complete main menu and add the start of the games settings
+
+### Work completed
+
+- Created the `MainMenu` scene.
+- Added Play, Options, Scores, Credits and Quit to the main menu.
+- Added options such as display, audio, camera, controls and gamplay options.
+- Created version `0.1.1` for testing the main menu and options menu.
+
+### Testing
+
+- The main menu can load `MainGame` correctly
+- Options saves successfully
+- Version `0.1.1` can be built and run without errors.
+
+### Problems
+
+- Builds downloaded onto the University systems are blcoked and must be compiled directly on the systems.
+- All settings save however, some are not yet connected to the systems.
+- The Scores menu doesnt exist/
+- The game doesnt clearly explain controls to players.
+
+
+### Next steps
+
+- Complete the main menu presentation
+- Add score saving and the scores menu
+- Connect all settings to the correct systems
+- Add clearer UI to explain controls to users
+
+## 22 October 2026 Playtesting Session
+
+### Aim
+
+Test version `0.1.1` to new players and find problems with the gameplay loop.
+
+### Work completed
+
+- Ran a playtesting session using the current main menu gameplay loop
+- Note how players understand the game and attempt to play it.
+
+### Testing
+
+- Players understood the purpose of the checkpoint arrow.
+- UI scaling worked correctly.
+- Players understood the game better after their first attempt.
+- Players were able to complete the gameplay loop after learning the controls.
+- Milk crates broke too easy.
+- The difference between throwing and placing milk crates is unclear to players.
+- Player movement continues after round completion.
+- The player can climb direcly up corners.
+- Players attempted to climb up the visible boundaries.
+
+### Problems
+
+- The game doesnt explain controlls well enough.
+- The environment doesnt have enough opportunities to show throwing, placing and parkour
+- The game doesnt always reset when replaying
+- The game has no consistent design in the UI
+- Milk crates break too easy.
+
+### Next steps
+
+- Remove the unused `FakeObject` reference.
+- Improve the player experience for new players.
+- Fix the round completion and replaying states.
+- Import the larger grey box.
+- Continue developing UI.
+
+## 23 October 2026
+
+### Aim
+
+Improve the game and move away from the grey box version.
+
+### Work completed
+
+- Added the game version and logos to the main menu
+- Added the missing quit confirmation panel to the main menu
+- Escape now closes secondary main menu panels
+- Created reusable prefabs for buttons, dropdowns, sliders and toggles.
+- Added hover animations to buttons.
+- Updated the pause menu and gameplay UI.
+- Updated the timer to format in `MM:SS` rather than seconds.
+- Added a basic crosshair.
+- Disabled sprinting and the UI.
+- Removed the `FakeObject` reference in `PlayerUIController`
+- Created an audio mixer with groups.
+- Added background music to the main menu and gameplay.
+- Completed the display and audio settings
+- Added the save function to the frame rate option.
+- Imported grey box v2.
+- Updated the player movement values to work in the bigger environment.
+- Created `SavedRoundResult`, `ScoreSaveSystem` and `ScoresMenuController`.
+- Saved round results to PlayerPrefs as JSON.
+- Added a scores menu.
+
+### Testing
+
+- The game version text changes between buids.
+- The display and audio settings save and laod
+- The audio mixer changes the volumes for music and sound effects.
+- The movement works better in the larger grey box.
+- The main menu buttons animate.
+
+### Problems
+
+- Settings save but some are not connected to the gameplay.
+- The checkpoint arrow is hidden slightly by the updated gameplay UI.
+- The final UI assets and fonts are yet to be agreed.
+- The score saving system and replay systems need testing with many rounds.
+
+### Next steps
+
+- Connect the settings to their systems
+- Update the round completion UI
+- Test the saved scores across multiple rounds.
+- Replace the 3D arrow with a UI compass.
+
+## 26 October 2026
+
+- Readded wall cling boost and air strafing from previous commits.
+- Removed high speed checkpoint breaking from milk crates
+- Removed projectile lifetime responsibility into `MilkCrate`.
+- Adjusted and refined the `PlayerController` values.
+- Seperated perminant ground, wall and air movement controls.
+
+### Next steps
+
+- Test movement in the alrger grey box
+- Add abilities into the game
+
+## 27 October 2026
+
+### Aim
+
+Merge the updated gameplay and new UI system projects into one combined project.
+
+### Work completed
+
+- Merged both projects into one.
+- Removed the unnecessary debugs.
+- Updated the round completion UI to match the design of other menus.
+- Temporarily disabled the credits button.
+- Updated the interruptionanimation states.
+- Built `0.1.2` for testing.
+- Fixed the game staying frozen once the gameplay scene loads a second time.
+- Added game speed resetting when `MainMenuController` and `WorldController` starts.
+- Refused `MaxAirSpeed` to `1` to stop the player immediately changing direction in the air.
+- Created an unused basic compass UI for the replacement of `CheckpointArrow`
+
+### Testing
+
+- Tested game speed resetting.
+- `MaxAirSpeed` gives the player less immediate control whilst airborne.
+- Found BoxCollider warnings caused by negatively scaled greybox buildings.
+- Found wall movement problem when moving back towards a wall after jumping away can bounce the player back towards the wall and vause them to move higher.
+- Found the 3D checkpoint arrow interferes with wall jumping.
+
+### Problems
+
+- Negative scaled objects give errors with BoxColliders.
+- Wall movement jumping bug.
+- Floor only objects can sometimes be detected as walls.
+- The UI compass is not created and does not yet replace the 3D arrow.
+- The pause state can stop UI animations because it sets `Time.timeScale` to zero.
+- MIlk throwing needs to be blocked when you gain focus to the game again.
+
+### Next steps
+
+- Replace the 3D checkpoint arrow with the UI compass.
+- Decide how delivery crates should be removed.
+- Add the round start trigger.
+- Create and test multiple delivery routes.
+- Add and test the complete round resetting.
+- Test repeated rounds and score saving.
 
 ## Entry Template
 
