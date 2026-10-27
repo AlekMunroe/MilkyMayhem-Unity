@@ -23,11 +23,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private bool perm_canSlide;
 
     [Header("Movement")]
-    [SerializeField] private float speed = 10f;
-    [SerializeField] private float gravity = -20f;
-    [SerializeField] private float maxAirSpeed = 0.5f;
-    [SerializeField] private float groundAcceleration = 45f;
-    [SerializeField] private float groundDeceleration = 55f;
+    [SerializeField] private float speed = 15f;
+    [SerializeField] private float gravity = -45f;
+    [SerializeField] private float airStrafeSpeed = 1f;
+    [SerializeField] private float groundAcceleration = 140f;
+    [SerializeField] private float groundDeceleration = 190f;
 
     private Vector2 movementInput;
 
@@ -41,8 +41,8 @@ public class PlayerController : MonoBehaviour
     
 
     [Header("Parkour Jump")]
-    [SerializeField] private float jumpHeight = 2.5f;
-    [SerializeField] private float forwardJumpBoost = 2f;
+    [SerializeField] private float jumpHeight = 7f;
+    [SerializeField] private float forwardJumpBoost = 3f;
     [SerializeField] private float coyoteTime = 0.15f;
     [SerializeField] private float jumpBufferTime = 0.15f;
 
@@ -61,11 +61,12 @@ public class PlayerController : MonoBehaviour
     [Header("Wall Movement")]
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
-    [SerializeField] private float wallClingBoost = 10f;
+    [SerializeField] private float wallClingBoost = 20f;
+    [SerializeField] private float wallStickForce = 10f;
     [SerializeField] private float wallSlideSpeed = 5f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
-    [SerializeField] private float wallMomentumHalfLife = 0.15f;
+    [SerializeField] private float wallMomentumHalfLife = 20f;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
@@ -73,13 +74,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float wallClimbBoost = 5f;
 
     [Header("Wall Jump")]
-    [SerializeField] private float wallJumpHeight = 2.5f;
-    [SerializeField] private float wallJumpForce = 8f;
-    [SerializeField] private float wallReattachDelay = 0.25f;
+    [SerializeField] private float wallJumpHeight = 6f;
+    [SerializeField] private float wallJumpForce = 10f;
+    [SerializeField] private float wallReattachDelay = 0.3f;
 
     [Header("Sliding")] 
     [SerializeField] private float slideDuration = 1.2f;
+    [Tooltip("Value is read as x:y")]
+    [SerializeField] private Vector2 momentumConversionRatio = new Vector2(1, 10); //Value is read as x:y
     [SerializeField] private float slideHeight = 1f;
+    [SerializeField] private float slideHeightCheckDistance = 1f;
     [SerializeField] private float slideCooldown = 0.5f;
     [SerializeField] private GameObject playerCam;
     [SerializeField] private float camSlidingHeight = 0.5f;
@@ -112,6 +116,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 minWallMomentum;
 
     private bool isSliding;
+    private float maxFallingVelocity;
     private float slideTimer;
     private float slideCooldownTimer;
     
@@ -240,7 +245,7 @@ public class PlayerController : MonoBehaviour
         // A sphere slightly smaller than the capsuleCollider
         float sphereRadus = Mathf.Min(playerBounds.extents.x, playerBounds.extents.z) * 0.9f;
 
-        // Cast from centre to a little elow the capsuleCollider
+        // Cast from centre to a little below the capsuleCollider
         float sphereCastDistance = playerBounds.extents.y - sphereRadus + groundCheckDistance;
 
         bool surfaceFound = Physics.SphereCast(playerBounds.center, sphereRadus, Vector3.down, out RaycastHit groundHIt, sphereCastDistance, environmentMask, QueryTriggerInteraction.Ignore);
@@ -405,6 +410,8 @@ public class PlayerController : MonoBehaviour
         
         velocityAlongWall *= momentumMultiplier;
 
+        velocityAlongWall += wallNormal * -wallStickForce;
+
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
 
@@ -429,16 +436,16 @@ public class PlayerController : MonoBehaviour
         Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, moveDirection);
 
         bool isVectorAway = Vector3.Dot(moveDirection, projectVelocity) < 0f;
-        if(projectVelocity.magnitude < maxAirSpeed || isVectorAway)
+        if(projectVelocity.magnitude < airStrafeSpeed || isVectorAway)
         {
             Vector3 idealVelocity = moveDirection.normalized * currentMovementSpeed;
             if (!isVectorAway)
             {
-                idealVelocity = Vector3.ClampMagnitude(idealVelocity, maxAirSpeed - projectVelocity.magnitude);
+                idealVelocity = Vector3.ClampMagnitude(idealVelocity, airStrafeSpeed - projectVelocity.magnitude);
             }
             else
             {
-                idealVelocity = Vector3.ClampMagnitude(idealVelocity, maxAirSpeed + projectVelocity.magnitude);
+                idealVelocity = Vector3.ClampMagnitude(idealVelocity, airStrafeSpeed + projectVelocity.magnitude);
             }
             playerRigidbody.linearVelocity += idealVelocity;
         }
@@ -617,7 +624,6 @@ public class PlayerController : MonoBehaviour
         if ((touchingWall || canWallClimb) && storedWallNormal == Vector3.zero)
         {
             storedWallNormal = wallNormal;
-            Debug.Log(storedWallNormal);
         }
         else if (!canWallClimb)
         {
@@ -663,9 +669,7 @@ public class PlayerController : MonoBehaviour
 
         Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
 
-        bool movingAwayFromWall = moveDirection.sqrMagnitude > 0.01f && Vector3.Dot(moveDirection, horizontalWallNormal) > 0.25f;
-
-        if (movingAwayFromWall)
+        if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.leftCtrlKey.isPressed)
         {
             Vector3 currentVelocity = playerRigidbody.linearVelocity;
             Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;
@@ -804,31 +808,48 @@ public class PlayerController : MonoBehaviour
         {
             slideTimer -= Time.deltaTime;
             
-            // Stop sliding when the timer ends or the player jumps
-            if (slideTimer <= 0f || !isGrounded)
+            Bounds playerBounds = capsuleCollider.bounds;
+
+            // A sphere slightly smaller than the capsuleCollider
+            float sphereRadus = Mathf.Min(playerBounds.extents.x, playerBounds.extents.z) * 0.9f;
+
+            // Cast from centre to a little above the capsuleCollider
+            float sphereCastDistance = playerBounds.extents.y - sphereRadus + slideHeightCheckDistance;
+
+            bool surfaceFound = Physics.SphereCast(playerBounds.center, sphereRadus, Vector3.up, out RaycastHit ceilingHIt, sphereCastDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+            // Stop sliding when the timer ends or the player jumps but not while theyre under an object while sliding
+            if ((slideTimer <= 0f || !isGrounded) && !surfaceFound)
             {
                 StopSliding();
+                maxFallingVelocity = 0f;
             }
 
             return;
         }
 
         bool slidePressed = keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
+
+        if (slidePressed && !isGrounded)
+        {
+            SlideBuffer();
+        }
+
         bool canSlide = slidePressed && isGrounded && slideCooldownTimer <= 0f;
 
         if (canSlide)
         {
-            slideDirection = GetSlideDirection(keyboard);
+            slideDirection = GetSlideDirection();
             if (slideDirection.sqrMagnitude < 0.01f)
             {
                 return;
             }
 
-            StartSliding(keyboard);
+            StartSliding();
         }
     }
 
-    private void StartSliding(Keyboard keyboard)
+    private void StartSliding()
     {
         isSliding = true;
         slideTimer = slideDuration;
@@ -868,39 +889,35 @@ public class PlayerController : MonoBehaviour
         PlayAnimation(resetAnimClip, WrapMode.ClampForever);
     }
 
+    private void SlideBuffer()
+    {
+        float fallingVelocity = playerRigidbody.linearVelocity.y;
+        if (fallingVelocity < 0 && fallingVelocity < maxFallingVelocity)
+        {
+            maxFallingVelocity = fallingVelocity;
+        }
+    }
+
     /// <summary>
     /// Get the direction that the player was moving when the slide starts
     /// </summary>
     /// <param name="keyboard"></param>
     /// <returns></returns>
-    private Vector3 GetSlideDirection(Keyboard keyboard)
+    private Vector3 GetSlideDirection()
     {
-        float horizontalInput = 0f;
-        float forwardInput = 0f;
-
-        if (keyboard.aKey.isPressed)
-        {
-            horizontalInput -= 1f;
-        }
-        
-        if (keyboard.dKey.isPressed)
-        {
-            horizontalInput += 1f;
-        }
-        
-        if (keyboard.sKey.isPressed)
-        {
-            forwardInput -= 1f;
-        }
-        
-        if (keyboard.wKey.isPressed)
-        {
-            forwardInput += 1f;
-        }
+        //Momentum conversion for vertical momentum to horizontal momentum
 
         Vector3 direction = playerRigidbody.linearVelocity;
 
-        return direction;
+        float conversionRatio = Mathf.Abs(maxFallingVelocity * momentumConversionRatio.x/momentumConversionRatio.y);
+        Debug.Log(conversionRatio);
+        if (conversionRatio < 1)
+        {
+            conversionRatio = 1;
+        }
+        Vector3 horizontalDirection = new Vector3(direction.x * conversionRatio, 0, direction.z * conversionRatio);
+
+        return horizontalDirection;
     }
 
     /// <summary>

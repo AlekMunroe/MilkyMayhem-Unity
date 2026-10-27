@@ -361,6 +361,24 @@ Create the first playable vertical slice by connecting the exiting mechanics and
 - Add crouching to sliding for more dynamic player skill expression.
 - Add abilities for more gameplay complexity.
 
+## 27 October Updated Sliding and Created Tutorial Scene
+- Updated Sliding mechanic, now the player can convert vertical velocity to horizontal velocity by falling from some height.
+- Adjusted player stat values.
+- Renamed maxAirSpeed to airStrafeSpeed as the variable's purpose was misunderstood.
+- Added a force that will stick the player to the wall while wall running.
+- Changed wall detachment from WASD input to Ctrl.
+
+## Testing
+- The collision between the road and walkway causes the player to exit sliding by giving small amount of vertical velocity. Adjusted the ground check values to mitigate this side effect.
+- Air strafing was too overtuned and allowed the player to return to the wall they jumped off of. The value was reverted to previous iteration.
+- Movement speed was too overtuned. It is lowered to a more reasonable value.
+- Players could slide under obstacles but would gte stuck as the slide ends. Added a check to see if there is a surface above the player.
+- Falling with too much velocity would result in the player's vertical velocity resetting before sliding activates. Added a buffer to preserve momentum internally for sliding speed calculation.
+
+## Next Steps
+- Test the player movements and refine the values for a smoother player experience.
+- Test sliding for any potential issues.
+
 ## Entry Template
 
 ### Date and Feature

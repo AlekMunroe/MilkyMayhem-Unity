@@ -150,9 +150,9 @@ MonoBehaviour:
   perm_canWallMove: 1
   perm_canAirMove: 1
   perm_canSlide: 1
-  speed: 25
+  speed: 15
   gravity: -45
-  maxAirSpeed: 7
+  airStrafeSpeed: 1
   groundAcceleration: 140
   groundDeceleration: 190
   sprintSpeed: 10
@@ -167,14 +167,15 @@ MonoBehaviour:
   environmentMask:
     serializedVersion: 2
     m_Bits: 64
-  groundCheckDistance: 0.15
+  groundCheckDistance: 0.25
   maxGroundAngle: 55
   minWallAngle: 70
   maxWallAngle: 110
   jumpReleaseMultiplier: 0.5
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
-  wallClingBoost: 10
+  wallClingBoost: 25
+  wallStickForce: 10
   wallSlideSpeed: 3
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
@@ -186,7 +187,9 @@ MonoBehaviour:
   wallJumpForce: 10
   wallReattachDelay: 0.3
   slideDuration: 1.2
+  momentumConversionRatio: {x: 1, y: 10}
   slideHeight: 1
+  slideHeightCheckDistance: 1
   slideCooldown: 0.5
   playerCam: {fileID: 6156471599712849670}
   camSlidingHeight: 0.5
@@ -300,7 +303,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 395796497234145654}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ArrowObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -502,7 +505,7 @@ GameObject:
   - component: {fileID: 8046349181964013174}
   - component: {fileID: 8962652604950427291}
   - component: {fileID: 7360077811693131402}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Cylinder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -613,7 +616,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6329495720164743972}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: CheckpointArrowOrigin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -629,7 +632,7 @@ Transform:
   m_GameObject: {fileID: 5250464621919868617}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.366, z: 0.943}
+  m_LocalPosition: {x: 0, y: 0.395, z: 0.943}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -647,7 +650,7 @@ GameObject:
   - component: {fileID: 3825527624622068085}
   - component: {fileID: 452359659290728111}
   - component: {fileID: 3436040060117494211}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Arrow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1032,7 +1035,7 @@ GameObject:
   - component: {fileID: 8386123424236031788}
   - component: {fileID: 3135591657488604780}
   - component: {fileID: 2747543741694592318}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Arrow (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

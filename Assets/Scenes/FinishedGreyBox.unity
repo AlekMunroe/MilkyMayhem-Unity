@@ -30515,10 +30515,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3745421130252953095, guid: 463432ab4904611ec9f2403e26dfcfa2, type: 3}
-      propertyPath: wallClingBoost
-      value: 25
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
