@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,66 +18,19 @@ public class PlayerUIController : MonoBehaviour
 
     void Awake()
     {
-        if (sprintSlider == null)
-        {
-            Debug.LogError("PlayerUIController: Sprint Slider is not assigned");
-
-            enabled = false;
-            return;
-        }
-
-        if(scoreText == null)
-        {
-            Debug.LogError("PlayerUIController: scoreText is not assigned");
-
-            enabled = false;
-            return;
-        }
-        
-        if(timeText == null)
-        {
-            Debug.LogError("PlayerUIController: timeText is not assigned");
-
-            enabled = false;
-            return;
-        }
-        
-        if(roundSummaryText == null)
-        {
-            Debug.LogError("PlayerUIController: roundSummaryText is not assigned");
-
-            enabled = false;
-            return;
-        }
-        
-        if(roundResultsText == null)
-        {
-            Debug.LogError("PlayerUIController: roundResultsText is not assigned");
-
-            enabled = false;
-            return;
-        }
-
-        if (playerController == null)
-        {
-            Debug.LogError("PlayerUIController: Player Controller is not assigned");
-
-            enabled = false;
-            return;
-        }
+        CheckNull(sprintSlider);
+        CheckNull(scoreText);
+        CheckNull(timeText);
+        CheckNull(roundSummaryText);
+        CheckNull(roundResultsText);
+        CheckNull(playerController);
 
         sprintSlider.interactable = false;
     }
 
     private void Start()
     {
-        if (GameManager.Instance == null)
-        {
-            Debug.LogError("PlayerUIController: No GameManager in the scene");
-
-            enabled = false;
-            return;
-        }
+        CheckNull(GameManager.Instance);
 
         GameManager.Instance.CheckpointProgressChanged += UpdateDeliveryText;
         GameManager.Instance.TimeRemainingChanged += UpdateTimeText;
@@ -105,7 +59,7 @@ public class PlayerUIController : MonoBehaviour
     {
         int completedDeliveries = totalCheckpoints - remainingCheckpoints;
 
-        scoreText.text = "Milk delivered: " + completedDeliveries + "\nMilk left: " + remainingCheckpoints;
+        scoreText.text = completedDeliveries + " Delivered\n\n" + remainingCheckpoints + " Left";
     }
 
     /// <summary>
@@ -116,7 +70,10 @@ public class PlayerUIController : MonoBehaviour
     {
         int displayedTime = Mathf.CeilToInt(timeRemaining);
 
-        timeText.text = displayedTime + " seconds remaining";
+        int minutes = displayedTime / 60;
+        int seconds = displayedTime % 60;
+
+        timeText.text = minutes.ToString("00") + ":" + seconds.ToString("00");
     }
 
     /// <summary>
@@ -158,5 +115,18 @@ public class PlayerUIController : MonoBehaviour
         GameManager.Instance.CheckpointProgressChanged -= UpdateDeliveryText;
         GameManager.Instance.TimeRemainingChanged -= UpdateTimeText;
         GameManager.Instance.RoundCompleted -= UpdateRoundCompleteUI;
+    }
+
+    /// <summary>
+    /// Check if a reference has been assigned and disable this when the reference is missing
+    /// </summary>
+    private void CheckNull(UnityEngine.Object reference)
+    {
+        if (reference == null)
+        {
+            Debug.LogError(GetType().Name + ": A reference is not assigned", this);
+
+            enabled = false;
+        }
     }
 }

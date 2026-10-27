@@ -9,7 +9,6 @@ public class MilkThrowing : MonoBehaviour
     [SerializeField, Min(0f)] private float throwStrength = 12f;
     [SerializeField, Min(0f)] private float playerVelocityMultiplier = 1f;
     [SerializeField, Min(0f)] private float throwMaxCooldown = 0.5f;
-    [SerializeField, Min(0f)] private float projectileLifetime = 10f;
 
     [Tooltip("The local position in front of the camera where the milk is created")]
     [SerializeField] private Vector3 projectileSpawnPointOffset = new Vector3(0f, -0.15f, 1f);
@@ -136,9 +135,6 @@ public class MilkThrowing : MonoBehaviour
 
         spawnedProjectile.AddTorque(randomTorque, ForceMode.Impulse);
 
-        // Remove the missed projectiles after its time has expired
-        Destroy(spawnedProjectile.gameObject, projectileLifetime);
-
         throwCooldown = throwMaxCooldown;
     }
 
@@ -170,8 +166,6 @@ public class MilkThrowing : MonoBehaviour
             Debug.LogWarning(
                 "MilkThrowing: The placed projectile has no MilkCrate component.");
         }
-
-        Destroy(placedProjectile.gameObject, projectileLifetime);
 
         throwCooldown = throwMaxCooldown;
     }

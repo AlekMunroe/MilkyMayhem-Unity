@@ -5,11 +5,18 @@ public class PauseMenuController : MonoBehaviour
 {
     [SerializeField] private int mainMenuSceneIndex;
 
-    [SerializeField] private GameObject confirmReturnUI;
+    [Header("Panels")]
+    [SerializeField] private GameObject mainPanel;
+    [SerializeField] private GameObject confirmMainMenuPanel;
 
     public void ReturnToGameButton()
     {
         WorldController.Instance.UpdatePause();
+    }
+
+    private void OnEnable()
+    {
+        ToggleConfirmReturnUI(false);
     }
 
     /// <summary>
@@ -18,7 +25,8 @@ public class PauseMenuController : MonoBehaviour
     /// <param name="toggle">Enable the confirmReturnUI panel</param>
     public void ToggleConfirmReturnUI(bool toggle)
     {
-        confirmReturnUI.SetActive(toggle);
+        mainPanel.SetActive(!toggle);
+        confirmMainMenuPanel.SetActive(toggle);
     }
     
     /// <summary>
