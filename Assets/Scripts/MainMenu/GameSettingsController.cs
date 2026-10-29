@@ -57,18 +57,19 @@ public class GameSettingsController : MonoBehaviour
 
     // The saved values
     public static float MouseSensitivity => PlayerPrefs.GetFloat(MouseSensitivityKey, 0.1f);
-    public static float FieldOfView => PlayerPrefs.GetFloat(FieldOfViewKey, 75f);
-    public static float CameraShakeStrength => PlayerPrefs.GetFloat(CameraShakeKey);
+    public static float FieldOfView => PlayerPrefs.GetFloat(FieldOfViewKey, 60f);
+    public static float CameraShakeStrength => PlayerPrefs.GetFloat(CameraShakeKey, 1f);
 
     public static bool InvertVerticalCamera => PlayerPrefs.GetInt(InvertVerticalCameraKey, 0) == 1;
     public static bool ShowControlsHint => PlayerPrefs.GetInt(ControlHintsKey, 1) == 1;
-    public static bool PuaseWhenUnfocused => PlayerPrefs.GetInt(PauseWhenUnfocusedKey, 1) == 1;
+    public static bool PauseWhenUnfocused => PlayerPrefs.GetInt(PauseWhenUnfocusedKey, 1) == 1;
 
     void Start()
     {
         SetupDisplayModeDropdown();
         SetupResolutionDropdown();
         SetupFrameRateDropdown();
+        SetupSliders();
 
         LoadSettings();
     }
@@ -100,7 +101,7 @@ public class GameSettingsController : MonoBehaviour
         soundEffectsVolumeSlider.SetValueWithoutNotify(1f);
 
         mouseSensitivitySlider.SetValueWithoutNotify(0.1f);
-        fieldOfViewSlider.SetValueWithoutNotify(75f);
+        fieldOfViewSlider.SetValueWithoutNotify(60f);
         cameraShakeSlider.SetValueWithoutNotify(1f);
         invertVerticalCameraToggle.SetIsOnWithoutNotify(false);
 
@@ -167,6 +168,31 @@ public class GameSettingsController : MonoBehaviour
     }
 
     /// <summary>
+    /// Updates the slider ranges to match gameplay values
+    /// </summary>
+    private void SetupSliders()
+    {
+        masterVolumeSlider.minValue = 0f;
+        masterVolumeSlider.maxValue = 1f;
+
+        musicVolumeSlider.minValue = 0f;
+        musicVolumeSlider.maxValue = 1f;
+
+        soundEffectsVolumeSlider.minValue = 0f;
+        soundEffectsVolumeSlider.maxValue = 1f;
+
+        mouseSensitivitySlider.minValue = 0.01f;
+        mouseSensitivitySlider.maxValue = 0.3f;
+
+        fieldOfViewSlider.minValue = 40f;
+        fieldOfViewSlider.maxValue = 80f;
+        fieldOfViewSlider.wholeNumbers = true;
+
+        cameraShakeSlider.minValue = 0f;
+        cameraShakeSlider.maxValue = 1f;
+    }
+
+    /// <summary>
     /// Loads all the saved settings into the UI
     /// </summary>
     private void LoadSettings()
@@ -188,7 +214,7 @@ public class GameSettingsController : MonoBehaviour
         cameraShakeSlider.SetValueWithoutNotify(CameraShakeStrength);
         invertVerticalCameraToggle.SetIsOnWithoutNotify(InvertVerticalCamera);
         controlHintsToggle.SetIsOnWithoutNotify(ShowControlsHint);
-        pauseWhenUnfocusedToggle.SetIsOnWithoutNotify(PuaseWhenUnfocused);
+        pauseWhenUnfocusedToggle.SetIsOnWithoutNotify(PauseWhenUnfocused);
 
         ApplyCurrentSettings(false);
     }

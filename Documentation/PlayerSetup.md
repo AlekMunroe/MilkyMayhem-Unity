@@ -18,11 +18,9 @@ Player
     └── Main Camera
         └── ThrowOrigin
             ├── MilkThrowing
-            └── CheckpointArrowOrigin
-                └── ArrowObject
 ```
 
-Keep any visible character models under `CharacterObjects`. `GroundCheck` is in the hierarchy but the angle based detection system uses the CapsuleCollider's bounds instead. `CamPos` is the camera's pivot which is lowerev by the sliding system (postponed). `ThrowOrigin` controls where milk crates appear. The checkpoint arrow object are stored in the player prefab and must be assigned to `CheckpointArrow`.
+Keep any visible character models under `CharacterObjects`. `GroundCheck` is in the hierarchy but the angle based detection system uses the CapsuleCollider's bounds instead. `CamPos` is the camera's pivot. `ThrowOrigin` controls where milk crates appear. The checkpoint compass is part of the gameplay UI and is no longer attached directly to the player.
 
 ## Components on Player
 
@@ -104,22 +102,23 @@ Floor only objects are sometimes treated as walls when the collider has enough s
 1. Keep `CameraController` on the root `Player` object.
 2. Assign `CamPos` as the camera object.
 3. Keep `Main Camera` below `CamPos`.
-4. Adjust mouse sensitivity and maximum look angle in the Inspector.
+4. Assign the player Camera and adjust the maximum look angle in the inspector.
+1. Mouse sensitivity, field of view, head bob strength and inverted vertica camera are laoded from the saved settings.
 
 Horizontal look rotates the player. Vertical look rotates the camera's pivot. `WorldController` disables camera input while paused.
 
 
-`CheckpointArrow` controls a temporary 3D arrow attached to the player.
+## Checkpoint Compass Setup
 
-1. Keep the arrow model attached.
-2. Add the arrow object to `ArrowObjectOrigin.`
-3. Use `Model Rotation Offset` if the model does not point correctly on the Z axis.
-4. Make sure the scene's `GameManager` is enabled.
-5. Make sure the checkpoint is assigned in the `GameManager`.
+1. Add the `CheckpointComapss` to the gameplay UI controller.
+1. Assign the compass visual GameObject
+1. Assign the compass needle RectTransform.
+1. Assign the Player Transform.
+1. Give every checkpoint a `CheckpointSearchArea`.
+1. Give the search area a SphereCollider set to Trigger.
+1. Assign the route prefab to the `GameManager`.
 
-The arrow reads the checkpoints using `GameManager.Checkpoints`. It then points to the closes available checkpoint and hides when there are no checkpoints available.
-
-The checkpoint arrow is in the process of being depreciated. This is to be replaced with a UI based compass.
+The compass will point to the cloasest checkpoint search area. It will hide when the player is inside the milk store or inside a search area.
 
 ## Milk Throwing Setup
 
@@ -133,7 +132,7 @@ Required setup:
 4. Confirm spawned crates have `Rigidbody`, `Collider` and `MilkCrate` components.
 5. Use left mouse to throw and right mouse to place.
 
-`MilkThrowing` ignores collisions with other spawned crates and the player. It also blocks input while paused, while the cursor is unlocked or while UI is being used.
+`MilkThrowing` ignores collisions with other spawned crates and the player. It also blocks input while paused, when the player is inside the milk store, while the cursor is unlocked or while UI is being used.
 
 ## Player UI Setup
 
@@ -143,23 +142,23 @@ Required setup:
 4. Assign the sprint Slider.
 5. Assign the delivery progress and remaining time TMP text objects.
 6. Assign the round results and round summary TMP text objects.
-7. Keep `PlayerUIController` on an object which will stay active when `RoundCompleteUI` hides.
+7. Assign the delivery infomration, timer and compass GameObjects.
+8. Keep `PlayerUIController` on an object which will stay active when `RoundCompleteUI` hides.
 
-The controller makes the Slider non interactable and updates it using `PlayerController.SprintStaminaPercent`. It listens to the GameManager's checkpoint, timer and round complete events to update the UI. The player reference is still scene dependent and should be checked whena new gameplay scene is created.
+The controller listens to the GameManager's events. The UI is hidden until the round starts. The timer flashes red when the low time warning starts.
 
 ## World, Game and Pause Setup
 
 The gameplay scene should contain one enabled `Controllers` object with:
 
 - `WorldController` for pause state, time scale, cursor, player and camera control
-- `GameManager` for checkpoint discovery, score and delivery progress
-- Any dedicated UI controllers required by the scene
-
-Assign the pause menu object to `WorldController`. Assign the parent containing the round's `MilkCheckpoint` objects to `GameManager` before testing.
+- `GameManager` for route creation, checkpoint searching, score and the delivery progress
+- `BackgroundMusicController` for changing music between game states
+- Any UI controllers required by the scene.
 
 Assign the pause menu object to the `WorldController`. Assign the parent with the all the `MilkCheckpoint` object and the `RoundCompleteUI` to `GameManager.
 
-`GameManager` starts the round timer, tracks the checkpoints, the score, broken bottles. It completes the round when every checkpoint is completed or the timer reaches zero. `PlayerController`, `CameraController` and the `PlayerUIController` all listen to `RoundCompleted` to stop the gameplay and show the final results.
+`GameManager` waits for the `MilkStoreExitTrigger` to call `StartRound` then creates a random checkpoint route. It then starts the timer and tracks the checkpoints, score and bottles broken. It completes the round when all checkpoints are completed or the timer reaches zero.
 
 ## Setup Verification
 
@@ -186,7 +185,8 @@ Before committing player or scene changes, verify:
 - Failed deliveries show feedback and can be retried successfully.
 - The Console contains no errors caused by missing references.
 - Every floor and wall uses the `Environment` layer.
-- The checkpoint arrow points to the closest available checkpoint.
+- The compass points towards the closest available checkpoint search area.
+- The comapss hides when the player is inside the checkpoint search area.
 - The delivery and timer UI show the correct values.
 - Round completion stops the player and camera.
 - Running out of time shows the failed round results.
@@ -196,3 +196,7 @@ Before committing player or scene changes, verify:
 - Wall cling vertical boost doesnt allow uncontrolled climbing.
 - The player doesnt move higher when returning to a wall after jumping away.
 - Starting another game after going back to the main menu resets `Time.timeScale`.
+- The round doesnt start while the player is inside the milk store.
+- Leaving the milk store closes the door and starts the round.
+- Throwing and placing are blocked inside the milk store.
+- The 30 second warning runs correctly.

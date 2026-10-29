@@ -12,9 +12,15 @@ public class PlayerUIController : MonoBehaviour
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private TMP_Text timeText;
 
+    [SerializeField] private GameObject deliveryInfo;
+    [SerializeField] private GameObject timer;
+    [SerializeField] private GameObject compass;
+
     [Header("Round Completion")]
     [SerializeField] private TMP_Text roundResultsText;
     [SerializeField] private TMP_Text roundSummaryText;
+
+    private Color defaultTimeTextColour;
 
     void Awake()
     {
@@ -24,8 +30,13 @@ public class PlayerUIController : MonoBehaviour
         CheckNull(roundSummaryText);
         CheckNull(roundResultsText);
         CheckNull(playerController);
+        CheckNull(deliveryInfo);
+        CheckNull(timer);
+        CheckNull(compass);
 
         sprintSlider.interactable = false;
+
+        defaultTimeTextColour = timeText.color;
     }
 
     private void Start()
@@ -35,9 +46,11 @@ public class PlayerUIController : MonoBehaviour
         GameManager.Instance.CheckpointProgressChanged += UpdateDeliveryText;
         GameManager.Instance.TimeRemainingChanged += UpdateTimeText;
         GameManager.Instance.RoundCompleted += UpdateRoundCompleteUI;
+        GameManager.Instance.RoundStarted += ShowRoundUI;
 
         UpdateDeliveryText(GameManager.Instance.RemainingCheckpoints, GameManager.Instance.TotalCheckpoints);
         UpdateTimeText(GameManager.Instance.TimeRemaining);
+        SetRoundUIActive(GameManager.Instance.IsRoundRunning);
     }
 
     void Update()
@@ -74,6 +87,29 @@ public class PlayerUIController : MonoBehaviour
         int seconds = displayedTime % 60;
 
         timeText.text = minutes.ToString("00") + ":" + seconds.ToString("00");
+
+        if(timeRemaining <= GameManager.Instance.LowTimeWarningThreshold)
+        {
+            bool showRed = Mathf.FloorToInt(timeRemaining * 2f) % 2 == 0;
+
+            timeText.color = showRed ? Color.red : defaultTimeTextColour;
+        }
+        else
+        {
+            timeText.color = defaultTimeTextColour;
+        }
+    }
+
+    private void ShowRoundUI()
+    {
+        SetRoundUIActive(true);
+    }
+
+    private void SetRoundUIActive(bool active)
+    {
+        deliveryInfo.SetActive(active);
+        timer.SetActive(active);
+        compass.SetActive(active);
     }
 
     /// <summary>
@@ -82,6 +118,8 @@ public class PlayerUIController : MonoBehaviour
     private void UpdateRoundCompleteUI()
     {
         GameManager gameManager = GameManager.Instance;
+
+        SetRoundUIActive(false);
 
         bool roundWon = gameManager.RemainingCheckpoints == 0;
 
@@ -115,6 +153,7 @@ public class PlayerUIController : MonoBehaviour
         GameManager.Instance.CheckpointProgressChanged -= UpdateDeliveryText;
         GameManager.Instance.TimeRemainingChanged -= UpdateTimeText;
         GameManager.Instance.RoundCompleted -= UpdateRoundCompleteUI;
+        GameManager.Instance.RoundStarted -= ShowRoundUI;
     }
 
     /// <summary>

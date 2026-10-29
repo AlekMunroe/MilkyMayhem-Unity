@@ -27,6 +27,7 @@ public class MilkThrowing : MonoBehaviour
     private Rigidbody playerRigidbody;
     private Collider[] playerColliders;
     private float throwCooldown;
+    private bool waitForMouseRelease;
 
 
     private void Start()
@@ -57,6 +58,14 @@ public class MilkThrowing : MonoBehaviour
         playerColliders = playerController.GetComponentsInChildren<Collider>();
     }
 
+    private void OnApplicationFocus(bool focus)
+    {
+        if (!focus)
+        {
+            waitForMouseRelease = true;
+        }
+    }
+
     private void Update()
     {
         Mouse mouse = Mouse.current;
@@ -80,8 +89,26 @@ public class MilkThrowing : MonoBehaviour
             throwCooldown -= Time.deltaTime;
         }
 
-        // Dont allow throwing if the game is paused or the cursor is unlocked for a menu
-        if (WorldController.isGamePaused || (Cursor.lockState != CursorLockMode.Locked))
+        // Handle unfocused mouse control. Do not throw.
+        if (!Application.isFocused)
+        {
+            waitForMouseRelease = true;
+
+            return;
+        }
+
+        if (waitForMouseRelease)
+        {
+            if(!mouse.leftButton.isPressed && !mouse.rightButton.isPressed)
+            {
+                waitForMouseRelease = false;
+            }
+
+            return;
+        }
+
+        // Dont allow throwing if the game is paused, the cursor is unlocked for a menu or the player is inside the milk store.
+        if (WorldController.isGamePaused || (Cursor.lockState != CursorLockMode.Locked) || playerController.IsInMilkStore)
         {
             return;
         }

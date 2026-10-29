@@ -113,6 +113,7 @@ Use the existing folders and only create a new category when it is required:
 │   ├── Player
 │   ├── SavingSystem
 │   ├── Throwable
+│   ├── Triggers
 │   ├── UI
 │   │   ├── Gameplay
 │   │   └── Menus
@@ -123,7 +124,7 @@ Use the existing folders and only create a new category when it is required:
 
 Test scenes should go in `Assets/Scenes/_testing`. The gameplay prefabs belong in `Assets/Prefabs/Gameplay`. Mian menu scripts belong in `Assets/Scripts/MainMenu` and score saving scripts belong in `Assets/Scripts/SavingSystem`.
 
-Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`. Development only scripts and prefabs belong in `_Dev` folders and should not be used as final player UI or gameplay content.
+Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`. Trigger scripts belong in `Assets/Scripts/Triggers`. Checkpoint route prefabs should be in `Assets/Prefabs/Gameplay/CheckpointRoutes`. Development only scripts and prefabs belong in `_Dev` folders and should not be used as final player UI or gameplay content.
 
 ## Depreciated Code and Assets
 
@@ -133,7 +134,7 @@ Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`
 - Document what replaced the old file and why it has been kept.
 - Only remove it after the group confirms that nothing else requires it.
 
-The old CharacterController player and the empty `EventHandler` are currently stored in `_Depreciated` folders. They are not part of the current game.
+The old CharacterController player and the empty `EventHandler` and the replaced `CheckpointArrow` are currently stored in `_Depreciated` folders. They are not part of the current game.
 
 Sprinting is depreicated. Its code is still part of the `PlayerController` but `Perm Can Sprint` is disabled.
 

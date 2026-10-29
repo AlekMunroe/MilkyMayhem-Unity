@@ -480,9 +480,16 @@ Improve the game and move away from the grey box version.
 - Removed projectile lifetime responsibility into `MilkCrate`.
 - Adjusted and refined the `PlayerController` values.
 - Seperated perminant ground, wall and air movement controls.
+- Readded Wall Cling Boost, Air Strafing from previous commits.
+- Reimplemented Sliding, now it preserves your current momentum to allow faster movement on the ground.
+- Fixed Milk Crates breaking when they interact with the checkpoints while at high velocity.
+- Adjusted default values of the Player Controller.
 
 ### Next steps
 
+- Refine values for smooth player experience.
+- Add crouching to sliding for more dynamic player skill expression.
+- Add abilities for more gameplay complexity.
 - Test movement in the alrger grey box
 - Add abilities into the game
 
@@ -530,6 +537,57 @@ Merge the updated gameplay and new UI system projects into one combined project.
 - Create and test multiple delivery routes.
 - Add and test the complete round resetting.
 - Test repeated rounds and score saving.
+
+## 28 October 2026
+
+### Aim
+
+Add the milk store and implement delayed round starting, checkpoint routes and replace the checkpoint arrow with the UI compass.
+
+### Work completed
+
+- Merged the `TutorialScene`, player prefab and the `PlayerController`.
+- Updated `MilkThrowing` to block input when the game is unfocused.
+- Updated `WorldController` to pause when the game is unfocused.
+- Connected settings to the gameplay: Mouse sensitivity, field of view, inverted vertical camera, camera shake.
+- Added a visual head bob as the camera shaking system.
+- Created a basic milk store interior.
+- Updated `GameManager` so the game starts manually.
+- Created `MilkStoreExitTrigger` to close the milk store and start the round when the player leaves.
+- Restricted the player controls when inside the milk store.
+- Updated `PlayerUIController` to hide the UI when inside the milk store.
+- Created `BackgroundMusicController` for the milk store, the round, the pause menu and the round complete states.
+- Removed the 3D checkpoint arrow and moved the script into `_Depreciated`.
+- Created `CheckpointCompass`, `CheckpointSearchArea` and `CheckpointRote`.
+- Created four checkpoint route prefabs for testing.
+- Updated the compass to point at a general checkpoint area rather than directly at the checkpoint.
+- Updated the score sorting in the main menu so the highest score shows first and if scores are the game, list them by the lowest completion time.
+- Added a 30 second warning sound with a flashing timer and increased speed in the music.
+- Added a dev menu in the main menu.
+- Build `v0.1.3` for external testing.
+
+### Testing
+
+- The round doesnt start in the milk store.
+- Leaving the milk store starts the round and enables the UI.
+- Throwing and placing are blocked in the milk store.
+- The checkpoint routes are randomised.
+- The compass hides and shows then going inside a checkpoint area.
+- The low time warning works correctly.
+- Background music changes between states.
+
+### Problems
+- `TutorialScene` is missing the `GameManager` reference for the `CameraController`.
+- Head bob seems to effect movement near some wall edges and needs more testing.
+- The game's performance drops when leaving the milk store.
+
+### Next steps
+- Test build `0.1.3` externally.
+- Create an improved collider system for buildings.
+- Add custom key binding system.
+- Create the abilities system.
+- Find out why the performance temporarily drops when leaving the milk store.
+- Decide if the round timer should change based on the amount of checkpoints.
 
 ## Entry Template
 

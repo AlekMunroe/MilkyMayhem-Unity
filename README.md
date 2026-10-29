@@ -2,11 +2,11 @@
 
 Milky Mayhem is a first-person parkour delivery game. The player controls a milkman who must move quickly through the environment, deliver milk and avoid hazards while trying to achieve a high score.
 
-The project is in the vertical slice development stage. The player uses a Rigidbody based `PlayerController rather than the old CharacterController based one. The player has ground modement, jumping, airborne movement, wall movement and sliding. Sprinting is now depreciated.
+The project is in the vertical slice development stage. The player uses a Rigidbody based `PlayerController` rather than the old CharacterController based one. The player has ground movement, jumping, airborne movement, wall movement and sliding. Sprinting is now depreciated. The current development build is `v0.1.3`.
 
-A complete prototype of the delivery loop is now implemented. The player can throw milk with the left mouse button or place milk with the right mouse button. Milk crates bouce and are removed after their lifetime expires in `MilkCrate`. Checkpoints aff score when milk is successfully delivered and a round finishes once every delivery is completed or the timer ends.
+A complete prototype of the delivery loop is now implemented. The player starts inside the milk store and the round begins when the player leaves. The player can throw milk with the left mouse button or place milk with the right mouse button. Milk crates bounce and are removed after their lifetime expires. Delivered crates do not expire. A testest checkpoint route is randomly chosen when the round starts. Deliveries add score and the round finishes when every delivery is completed or the timer ends.
 
-The project now includes Main menu, options, scores and credits. It has updated UI to match the theme of the game. 
+The project includes a main menu, options menu, saved scores, gameplay UI, a pause menu and round completion screen. The gameplay UI has a new compass which points to a general delivery area and hides when the player is inside.
 
 ## Requirements
 
@@ -26,6 +26,8 @@ Open the project using the exact Unity version above. Opening and saving it in a
 5. Enter Play Mode and test the controls.
 
 `MainMenu` is the first scene in the build settings. `MainGame`, `DevMenu` and `MovementTest` are also included for the gameplay and dev testing.
+
+Throwing, placing, jumping and sliding is disabled while the player is inside the milk store.
 
 ## Current Controls
 
@@ -51,11 +53,11 @@ Sprinting is being depreciated.
 
 ## Current Priorities
 
-1. Decide how the crates should be removed.
-2. Add a round start hub inside the incomplete Milk Store and gameplay will start once exited.
-3. Create multiple checkpoint routes and randomly choose one when the round starts.
-4. Reset the round state correctly when starting a new round.
-5. Replace the 3D Checkpoint Arrow with a new UI compass. Include delivery search areas.
-6. Test repeating rounds, saved scores and route randomisation.
-7. Fix any final bugs relating to the player.
-8. Finalise the UI design.
+1. Test build `v0.1.3` and fix any problems.
+1. Create a box collider system to include extra points.
+1. Test repeated rounds, saved scores and checkpoint route randomisation.
+1. Add custom key binds and connect them to the settings menu.
+1. Create the player ability system.
+1. Find the performance drop issue when leaving the milk store.
+1. Decide if the round time should start based on the selected route.
+1. Continue replacing temporary assets.
