@@ -211,22 +211,33 @@ public class MilkCrate : MonoBehaviour
             return;
         }
 
-        if (projectileRigidbody.linearVelocity.sqrMagnitude < 0.01f)
+        currentIdleLifetime -= Time.fixedDeltaTime;
+
+        if (currentLifetime <= 0f)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        // Delivered crates to stay visible when their lifetime expires
+        if (IsLanded)
+        {
+            return;
+        }
+
+        if(projectileRigidbody.linearVelocity.sqrMagnitude < 0.01f)
         {
             currentIdleLifetime -= Time.fixedDeltaTime;
 
             if(currentIdleLifetime <= 0f)
             {
-                MarkBroken();
+                Destroy(gameObject);
             }
         }
-
-        if (currentLifetime <= 0f)
+        else
         {
-            MarkBroken();
+            currentIdleLifetime = maxIdleLifetime;
         }
-
-        currentLifetime -= Time.fixedDeltaTime;
     }
 
     /// <summary>

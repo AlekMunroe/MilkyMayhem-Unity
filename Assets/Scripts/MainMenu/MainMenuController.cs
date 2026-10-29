@@ -21,6 +21,10 @@ public class MainMenuController : MonoBehaviour
     [Header("Build Information")]
     [SerializeField] private TMP_Text gameVersionText;
 
+    [Header("Developmenr")]
+    [SerializeField] private GameObject devMenuButton;
+    [SerializeField] private GameObject devMenuPanel;
+
     void Start()
     {
         CloseAllSecondaryPanels();
@@ -28,6 +32,12 @@ public class MainMenuController : MonoBehaviour
         UpdateGameVersionText();
 
         ResetGameSpeed();
+
+        devMenuButton.SetActive(false);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DEV_EnableDevButton();
+#endif
     }
 
     void Update()
@@ -135,6 +145,26 @@ public class MainMenuController : MonoBehaviour
         {
             gameVersionText.text += "\nDevelopment Build";
         }
+    }
+
+    public void DEV_OpenDevMenu()
+    {
+        CloseAllSecondaryPanels();
+
+        devMenuPanel.SetActive(true);
+    }
+
+    private void DEV_EnableDevButton()
+    {
+        devMenuButton.SetActive(true);
+    }
+
+    public void DEV_ClearAllPlayerprefs()
+    {
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+
+        Application.Quit();
     }
 
     /// <summary>

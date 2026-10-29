@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System;
 
 public class WorldController : MonoBehaviour
 {
@@ -11,6 +12,10 @@ public class WorldController : MonoBehaviour
 
     [Header("UI")] 
     [SerializeField] private GameObject pauseMenuUI;
+
+    private bool pauseWhenUnfocused;
+
+    public event Action<bool> PauseChanged;
 
     void Awake()
     {
@@ -24,6 +29,8 @@ public class WorldController : MonoBehaviour
         }
 
         Instance = this;
+
+        pauseWhenUnfocused = GameSettingsController.PauseWhenUnfocused;
     }
 
     void Start()
@@ -32,6 +39,14 @@ public class WorldController : MonoBehaviour
         ResetGameSpeed();
 
         LockMouse();
+    }
+
+    private void OnApplicationFocus(bool focus)
+    {
+        if (!focus && pauseWhenUnfocused && !isGamePaused)
+        {
+            UpdatePause();
+        }
     }
 
     void Update()
@@ -57,7 +72,8 @@ public class WorldController : MonoBehaviour
             cameraController.enabled = true;
             PlayerController.Instance.UpdatePause(false);
             pauseMenuUI.SetActive(false);
-            
+            PauseChanged?.Invoke(false);
+
             return;
         }
         
@@ -67,6 +83,7 @@ public class WorldController : MonoBehaviour
         cameraController.enabled = false;
         PlayerController.Instance.UpdatePause(true);
         pauseMenuUI.SetActive(true);
+        PauseChanged.Invoke(true);
     }
 
     /// <summary>

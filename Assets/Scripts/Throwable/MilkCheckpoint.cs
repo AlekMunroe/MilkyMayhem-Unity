@@ -9,6 +9,7 @@ public class MilkCheckpoint : MonoBehaviour
     [SerializeField, Min(0f)] private float maximumSafeDeliverySpeed = 10f;
     [SerializeField, Min(0)] private int scoreValue = 100;
     [SerializeField] private Transform landingPoint;
+    [SerializeField] private CheckpointSearchArea searchArea;
 
     [Header("Feedback")]
     [SerializeField] private GameObject successfulDeliveryVisual;
@@ -20,6 +21,8 @@ public class MilkCheckpoint : MonoBehaviour
     private bool isCleared;
 
     public bool IsCleared => isCleared;
+
+    public CheckpointSearchArea SearchArea => searchArea;
 
     private void Awake()
     {
@@ -39,6 +42,16 @@ public class MilkCheckpoint : MonoBehaviour
         if(failedDeliveryVisual != null)
         {
             failedDeliveryVisual.SetActive(false);
+        }
+
+        if(searchArea == null)
+        {
+            searchArea = GetComponentInParent<CheckpointSearchArea>();
+        }
+
+        if(searchArea == null)
+        {
+            Debug.LogWarning("MilkCheckpoint: CheckpointSearchArea is missing");
         }
     }
 

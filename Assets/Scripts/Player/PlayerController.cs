@@ -23,26 +23,31 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private bool perm_canSlide;
 
     [Header("Movement")]
-    [SerializeField] private float speed = 10f;
-    [SerializeField] private float gravity = -20f;
-    [SerializeField] private float maxAirSpeed = 0.5f;
-    [SerializeField] private float groundAcceleration = 45f;
-    [SerializeField] private float groundDeceleration = 55f;
+    [SerializeField] private float speed = 15f;
+    [SerializeField] private float gravity = -45f;
+    [SerializeField] private float airStrafeSpeed = 1f;
+    [SerializeField] private float groundAcceleration = 140f;
+    [SerializeField] private float groundDeceleration = 190f;
 
     private Vector2 movementInput;
 
-    
+    [Header("Milk store movement")]
+    [SerializeField, Min(0f)] private float milkStoreMovementSpeed = 7f;
+
+    private bool isInMilkStore;
+    public bool IsInMilkStore => isInMilkStore;
+
     [Header("Sprinting")]
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float maxSprintStamina = 2f;
     [SerializeField] private float sprintDrainSpeed = 1f;
     [SerializeField] private float sprintRegenerationSpeed = 0.75f;
-    [SerializeField] private float sprintRegenerationDelay = 1f; 
-    
+    [SerializeField] private float sprintRegenerationDelay = 1f;
+
 
     [Header("Parkour Jump")]
-    [SerializeField] private float jumpHeight = 2.5f;
-    [SerializeField] private float forwardJumpBoost = 2f;
+    [SerializeField] private float jumpHeight = 7f;
+    [SerializeField] private float forwardJumpBoost = 3f;
     [SerializeField] private float coyoteTime = 0.15f;
     [SerializeField] private float jumpBufferTime = 0.15f;
 
@@ -61,11 +66,12 @@ public class PlayerController : MonoBehaviour
     [Header("Wall Movement")]
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
-    [SerializeField] private float wallClingBoost = 10f;
+    [SerializeField] private float wallClingBoost = 20f;
+    [SerializeField] private float wallStickForce = 10f;
     [SerializeField] private float wallSlideSpeed = 5f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
-    [SerializeField] private float wallMomentumHalfLife = 0.15f;
+    [SerializeField] private float wallMomentumHalfLife = 20f;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
@@ -73,13 +79,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float wallClimbBoost = 5f;
 
     [Header("Wall Jump")]
-    [SerializeField] private float wallJumpHeight = 2.5f;
-    [SerializeField] private float wallJumpForce = 8f;
-    [SerializeField] private float wallReattachDelay = 0.25f;
+    [SerializeField] private float wallJumpHeight = 6f;
+    [SerializeField] private float wallJumpForce = 10f;
+    [SerializeField] private float wallReattachDelay = 0.3f;
 
-    [Header("Sliding")] 
+    [Header("Sliding")]
     [SerializeField] private float slideDuration = 1.2f;
+    [Tooltip("Value is read as x:y")]
+    [SerializeField] private Vector2 momentumConversionRatio = new Vector2(1, 10); //Value is read as x:y
     [SerializeField] private float slideHeight = 1f;
+    [SerializeField] private float slideHeightCheckDistance = 1f;
     [SerializeField] private float slideCooldown = 0.5f;
     [SerializeField] private GameObject playerCam;
     [SerializeField] private float camSlidingHeight = 0.5f;
@@ -90,7 +99,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private AnimationClip slideAnimClip;
     [SerializeField] private AnimationClip resetAnimClip; //Used to reset all animations to the default state
 
-    
+
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
@@ -112,9 +121,10 @@ public class PlayerController : MonoBehaviour
     private Vector3 minWallMomentum;
 
     private bool isSliding;
+    private float maxFallingVelocity;
     private float slideTimer;
     private float slideCooldownTimer;
-    
+
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private Vector3 slideDirection;
@@ -173,7 +183,7 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-        if(GameManager.Instance != null)
+        if (GameManager.Instance != null)
         {
             GameManager.Instance.RoundCompleted += HandleRoundCompleted;
         }
@@ -240,7 +250,7 @@ public class PlayerController : MonoBehaviour
         // A sphere slightly smaller than the capsuleCollider
         float sphereRadus = Mathf.Min(playerBounds.extents.x, playerBounds.extents.z) * 0.9f;
 
-        // Cast from centre to a little elow the capsuleCollider
+        // Cast from centre to a little below the capsuleCollider
         float sphereCastDistance = playerBounds.extents.y - sphereRadus + groundCheckDistance;
 
         bool surfaceFound = Physics.SphereCast(playerBounds.center, sphereRadus, Vector3.down, out RaycastHit groundHIt, sphereCastDistance, environmentMask, QueryTriggerInteraction.Ignore);
@@ -270,7 +280,7 @@ public class PlayerController : MonoBehaviour
         }
         else if (isWallClinging)
         {
-            if(wallClingTimer <= maxWallClingTime)
+            if (wallClingTimer <= maxWallClingTime)
             {
                 // Stop the player from falling temporarily
                 //Note from Theo: After some testing and feedback from other members of the team, I have changed the wall cling to be a small boost upwards instead of just stopping, similar to Titanfall 2.
@@ -381,12 +391,19 @@ public class PlayerController : MonoBehaviour
         playerRigidbody.linearVelocity = new Vector3(newHorizontalVelocity.x, currentVelocity.y, newHorizontalVelocity.z);
     }
 
+    public void SetMilkStoreMovement(bool enabled)
+    {
+        isInMilkStore = enabled;
+
+        currentMovementSpeed = enabled ? milkStoreMovementSpeed : speed;
+    }
+
     /// <summary>
     /// Reads WASD inputs and handles movement while the player is on a wall.
     /// </summary>
     private void UpdateWallMovement()
     {
-        if (!perm_canWallMove)
+        if (!perm_canWallMove || isInMilkStore)
         {
             return;
         }
@@ -402,8 +419,10 @@ public class PlayerController : MonoBehaviour
         Vector3 velocityAlongWall = Vector3.ProjectOnPlane(horizontalVelocity, horizontalWallNormal);
 
         float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
-        
+
         velocityAlongWall *= momentumMultiplier;
+
+        velocityAlongWall += wallNormal * -wallStickForce;
 
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
@@ -420,7 +439,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Keep wall jump direction
-        if(wallReattachTimer > 0f)
+        if (wallReattachTimer > 0f)
         {
             return;
         }
@@ -429,16 +448,16 @@ public class PlayerController : MonoBehaviour
         Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, moveDirection);
 
         bool isVectorAway = Vector3.Dot(moveDirection, projectVelocity) < 0f;
-        if(projectVelocity.magnitude < maxAirSpeed || isVectorAway)
+        if (projectVelocity.magnitude < airStrafeSpeed || isVectorAway)
         {
             Vector3 idealVelocity = moveDirection.normalized * currentMovementSpeed;
             if (!isVectorAway)
             {
-                idealVelocity = Vector3.ClampMagnitude(idealVelocity, maxAirSpeed - projectVelocity.magnitude);
+                idealVelocity = Vector3.ClampMagnitude(idealVelocity, airStrafeSpeed - projectVelocity.magnitude);
             }
             else
             {
-                idealVelocity = Vector3.ClampMagnitude(idealVelocity, maxAirSpeed + projectVelocity.magnitude);
+                idealVelocity = Vector3.ClampMagnitude(idealVelocity, airStrafeSpeed + projectVelocity.magnitude);
             }
             playerRigidbody.linearVelocity += idealVelocity;
         }
@@ -466,7 +485,7 @@ public class PlayerController : MonoBehaviour
         {
             jumpBufferTimer -= Time.deltaTime;
         }
-        
+
         wallReattachTimer -= Time.deltaTime;
     }
 
@@ -477,7 +496,7 @@ public class PlayerController : MonoBehaviour
     {
         Keyboard keyboard = Keyboard.current;
 
-        if (!perm_canJump)
+        if (!perm_canJump || isInMilkStore)
         {
             return;
         }
@@ -507,14 +526,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    
+
 
     /// <summary>
     /// Do a normal jump with a small forward boost
     /// </summary>
     private void PerformParkourJump()
     {
-        if (!perm_canParkourJump)
+        if (!perm_canParkourJump || isInMilkStore)
         {
             return;
         }
@@ -573,7 +592,7 @@ public class PlayerController : MonoBehaviour
     /// <param name="keyboard"></param>
     private void UpdateSprint(Keyboard keyboard)
     {
-        if (!perm_canSprint)
+        if (!perm_canSprint || isInMilkStore)
         {
             return;
         }
@@ -631,7 +650,7 @@ public class PlayerController : MonoBehaviour
         {
             storedWallMomentum = Vector3.zero;
         }
-        
+
         if (isGrounded)
         {
             isWallClinging = false;
@@ -662,9 +681,7 @@ public class PlayerController : MonoBehaviour
 
         Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
 
-        bool movingAwayFromWall = moveDirection.sqrMagnitude > 0.01f && Vector3.Dot(moveDirection, horizontalWallNormal) > 0.25f;
-
-        if (movingAwayFromWall)
+        if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.leftCtrlKey.isPressed)
         {
             Vector3 currentVelocity = playerRigidbody.linearVelocity;
             Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;
@@ -707,17 +724,17 @@ public class PlayerController : MonoBehaviour
     private bool TryFindWall(out RaycastHit wallHit)
     {
         Vector3 rayOrigin = capsuleCollider.bounds.center;
-        
+
         float rayDistance = capsuleCollider.radius + wallCheckDistance;
-        
+
         // Seperate direction wall detection
         // I am using multiple if statements for readability
-        if(TryFindWallInDirection(rayOrigin, transform.forward, rayDistance, out wallHit))
+        if (TryFindWallInDirection(rayOrigin, transform.forward, rayDistance, out wallHit))
         {
             return true;
         }
 
-        if(TryFindWallInDirection(rayOrigin, -transform.forward, rayDistance, out wallHit))
+        if (TryFindWallInDirection(rayOrigin, -transform.forward, rayDistance, out wallHit))
         {
             return true;
         }
@@ -769,13 +786,13 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-        
+
         // Add the clip if it is not already in the Animation component.
         if (playerAnim.GetClip(animationClip.name) == null)
         {
             playerAnim.AddClip(animationClip, animationClip.name);
         }
-        
+
         AnimationState animationState = playerAnim[animationClip.name];
 
         if (animationState != null)
@@ -783,13 +800,13 @@ public class PlayerController : MonoBehaviour
             animationState.wrapMode = wrapMode;
         }
     }
-    
+
     /// <summary>
     /// Starts, updates and finish the actual sliding
     /// </summary>
     private void UpdateSliding(Keyboard keyboard)
     {
-        if (!perm_canSlide)
+        if (!perm_canSlide || isInMilkStore)
         {
             return;
         }
@@ -802,36 +819,53 @@ public class PlayerController : MonoBehaviour
         if (isSliding)
         {
             slideTimer -= Time.deltaTime;
-            
-            // Stop sliding when the timer ends or the player jumps
-            if (slideTimer <= 0f || !isGrounded)
+
+            Bounds playerBounds = capsuleCollider.bounds;
+
+            // A sphere slightly smaller than the capsuleCollider
+            float sphereRadus = Mathf.Min(playerBounds.extents.x, playerBounds.extents.z) * 0.9f;
+
+            // Cast from centre to a little above the capsuleCollider
+            float sphereCastDistance = playerBounds.extents.y - sphereRadus + slideHeightCheckDistance;
+
+            bool surfaceFound = Physics.SphereCast(playerBounds.center, sphereRadus, Vector3.up, out RaycastHit ceilingHIt, sphereCastDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+            // Stop sliding when the timer ends or the player jumps but not while theyre under an object while sliding
+            if ((slideTimer <= 0f || !isGrounded) && !surfaceFound)
             {
                 StopSliding();
+                maxFallingVelocity = 0f;
             }
 
             return;
         }
 
         bool slidePressed = keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
+
+        if (slidePressed && !isGrounded)
+        {
+            SlideBuffer();
+        }
+
         bool canSlide = slidePressed && isGrounded && slideCooldownTimer <= 0f;
 
         if (canSlide)
         {
-            slideDirection = GetSlideDirection(keyboard);
+            slideDirection = GetSlideDirection();
             if (slideDirection.sqrMagnitude < 0.01f)
             {
                 return;
             }
 
-            StartSliding(keyboard);
+            StartSliding();
         }
     }
 
-    private void StartSliding(Keyboard keyboard)
+    private void StartSliding()
     {
         isSliding = true;
         slideTimer = slideDuration;
-        
+
         // Shrink the height of the player and keep the bottom part to the floor
         float heightDifference = normalControllerHeight - slideHeight;
 
@@ -854,7 +888,7 @@ public class PlayerController : MonoBehaviour
     {
         isSliding = false;
         slideCooldownTimer = slideCooldown;
-        
+
         capsuleCollider.height = normalControllerHeight;
         capsuleCollider.center = normalControllerCenter;
 
@@ -867,39 +901,35 @@ public class PlayerController : MonoBehaviour
         PlayAnimation(resetAnimClip, WrapMode.ClampForever);
     }
 
+    private void SlideBuffer()
+    {
+        float fallingVelocity = playerRigidbody.linearVelocity.y;
+        if (fallingVelocity < 0 && fallingVelocity < maxFallingVelocity)
+        {
+            maxFallingVelocity = fallingVelocity;
+        }
+    }
+
     /// <summary>
     /// Get the direction that the player was moving when the slide starts
     /// </summary>
     /// <param name="keyboard"></param>
     /// <returns></returns>
-    private Vector3 GetSlideDirection(Keyboard keyboard)
+    private Vector3 GetSlideDirection()
     {
-        float horizontalInput = 0f;
-        float forwardInput = 0f;
-
-        if (keyboard.aKey.isPressed)
-        {
-            horizontalInput -= 1f;
-        }
-        
-        if (keyboard.dKey.isPressed)
-        {
-            horizontalInput += 1f;
-        }
-        
-        if (keyboard.sKey.isPressed)
-        {
-            forwardInput -= 1f;
-        }
-        
-        if (keyboard.wKey.isPressed)
-        {
-            forwardInput += 1f;
-        }
+        //Momentum conversion for vertical momentum to horizontal momentum
 
         Vector3 direction = playerRigidbody.linearVelocity;
 
-        return direction;
+        float conversionRatio = Mathf.Abs(maxFallingVelocity * momentumConversionRatio.x / momentumConversionRatio.y);
+        Debug.Log(conversionRatio);
+        if (conversionRatio < 1)
+        {
+            conversionRatio = 1;
+        }
+        Vector3 horizontalDirection = new Vector3(direction.x * conversionRatio, 0, direction.z * conversionRatio);
+
+        return horizontalDirection;
     }
 
     /// <summary>
@@ -913,19 +943,19 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-        
+
         AnimationState animationState = playerAnim[animationClip.name];
 
         if (animationState == null)
         {
             return;
         }
-        
+
         // Restart the animation from the first frame
         animationState.time = 0f;
         animationState.speed = 1f;
         animationState.wrapMode = wrapMode;
-        
+
         playerAnim.Play(animationClip.name, PlayMode.StopAll);
     }
 

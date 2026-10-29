@@ -400,6 +400,74 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 1332668022892471931}
   m_maskType: 0
+--- !u!1 &2832260036537179499
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2511601515592897957}
+  - component: {fileID: 3174037526576225471}
+  - component: {fileID: 3564076528631602510}
+  m_Layer: 0
+  m_Name: CheckpointArea
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2511601515592897957
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2832260036537179499}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 1, z: 0.5}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8255921247598885360}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &3174037526576225471
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2832260036537179499}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 50
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3564076528631602510
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2832260036537179499}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79093f02d5abc6f4d8840a853bde7db8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheckpointSearchArea
+  areaRadius: 50
+  areaColour: {r: 1, g: 0.75, b: 0, a: 0.75}
 --- !u!1 &4709616816650212490
 GameObject:
   m_ObjectHideFlags: 0
@@ -663,6 +731,7 @@ Transform:
   - {fileID: 903029447652449837}
   - {fileID: 266372060359697055}
   - {fileID: 2896986038110958956}
+  - {fileID: 2511601515592897957}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &6888341143069002910
@@ -702,6 +771,7 @@ MonoBehaviour:
   maximumSafeDeliverySpeed: 10
   scoreValue: 100
   landingPoint: {fileID: 2896986038110958956}
+  searchArea: {fileID: 3564076528631602510}
   successfulDeliveryVisual: {fileID: 5133615298233755645}
   failedDeliveryVisual: {fileID: 2571203551498360288}
   audioSource: {fileID: 4183966191187056144}

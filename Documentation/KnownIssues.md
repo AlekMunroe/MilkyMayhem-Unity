@@ -49,16 +49,6 @@ Acceleration, deceleration, air control, sprinting, jump forces, wall behaviour 
 
 **Next action:** Check required references during startup, disable the component when they are missing and log an error.
 
-### Projectile lifetime has two owners
-
-**Status:** Partially complete
-
-`MilkCrate` now is the only script responsible for projectile lifetime. `MilkThrowing` doesnt schedule thrown or plaed crates for destruction.
-
-Successful delviery crates are made kinematic with no velocity. The idle and max lifetime checks continue and could cause delivery crates to be broken or destroyed.
-
-**Next action:** Decide if delivered crates should stay visible or disappear cleanly after a delay.
-
 ### Throw physics require balancing
 
 **Status:** Balancing required
@@ -74,12 +64,6 @@ Throw strength, inherited player velocity, angular torque, bounce force, bounce 
 The gameplay UI shows completed deliveries, remaining deliveries and the remaining time. The results screen shows the completion time, deliveries completed, bottles broken and the final scre.
 
 The current designs are temporary and will be replaced when the final UI designs are available.
-
-### Checkpoint discovery only occurs at startup
-
-**Status:** Accepted for current prototype
-
-`GameManager` finds checkpoints under its container during `Start`. Checkpoints created later will not automatically be included in the round total.
 
 ### Development visual null handling is incomplete
 
@@ -117,7 +101,15 @@ Crates entering checkpoints now comlete deliveries without checking the impact s
 
 **Status:** Accepted for vertical slice
 
-The gameplay UI shows the delivery progress, remaining round time and sprint stamina. The round complete screen shows the results and round informaiton. The assets are temporary and need a final UI design and testing in different resolutions.
+The gameplay UI shows the delivery progress, remaining rount time and compass. The round complete screen shows the results and round informaiton. The current UI needs more resting in multiple resolutions.
+
+### Head bob requires more testing
+
+**Status:** Testing required
+
+Head bobbing is visual but movement seems different near some wall edges.
+
+**Next action:** Compare movement with head bob set to zero and check if this is caused by the camera or the existing wall edge bug.
 
 ## Deprecated and Postponed Work
 
@@ -150,10 +142,18 @@ Some grey box objects are on a negative scale. Unity forces the BoxCollider size
 
 Warnings can be ignored until we recieve the updated model.
 
-### The checkpoint arrow interferes with wall movement
+### TutorialScene is missing GameManager
 
-**Status:** Replacement planned
+**Status:** Open
 
-The temporary 3D checkpoint arrow is attached to the player and interfered with wall jumping. A UI compass is planned.
+`CameraController` expects a `GameManager` to subscribe to `RoundCompleted`. The TutorialScene doesnt have one and gives an error.
 
-**Next action:** Replace the 3D arrow with the UI compass to point to a general delivery area and hide it when the player searches in the area.
+**Next action:** Add the game state setup or stop the tutorial camera from requiring the event.
+
+### Performance drop when leaving the milk store
+
+**Status:** Investigate
+
+A performance drop is clearly noticable when the player leaves the milk store. It is suspected that this is due to the round starting.
+
+**Next action:** Look at the route instanting, checkpoint creation, music switching or the UI enabling when the round starts.

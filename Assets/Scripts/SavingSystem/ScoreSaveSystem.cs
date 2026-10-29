@@ -6,9 +6,6 @@ using System;
 /// </summary>
 public class ScoreSaveSystem : MonoBehaviour
 {
-    [Header("Route")]
-    [SerializeField] private int routeNumber = 1;
-
     private const string SavedResultsKey = "SavedRoundResults";
     private const int MaximumSavedResults = 50;
 
@@ -42,14 +39,14 @@ public class ScoreSaveSystem : MonoBehaviour
         int deliveriesCompleted = gameManager.TotalCheckpoints - gameManager.RemainingCheckpoints;
         bool routeCompleted = gameManager.TotalCheckpoints > 0 && gameManager.RemainingCheckpoints == 0;
 
-        SavedRoundResult result = new SavedRoundResult(DateTime.Now.ToString("dd/MM/yyyy HH:mm"), gameManager.Score, deliveriesCompleted, gameManager.TotalCheckpoints, gameManager.BottlesBroken, gameManager.CompletionTime, routeNumber, routeCompleted);
+        SavedRoundResult result = new SavedRoundResult(DateTime.Now.ToString("dd/MM/yyyy HH:mm"), gameManager.Score, deliveriesCompleted, gameManager.TotalCheckpoints, gameManager.BottlesBroken, gameManager.CompletionTime, gameManager.RouteNumber, routeCompleted);
 
         SavedRoundResultCollection collection = LoadResults();
 
         collection.results.Add(result);
 
         // Highest score - First
-        collection.results.Sort((first, second) => second.score.CompareTo(first.score));
+        SortResults(collection);
 
         // Stop the PlayerPrefs value from growing
         if(collection.results.Count > MaximumSavedResults)
@@ -85,7 +82,24 @@ public class ScoreSaveSystem : MonoBehaviour
             return new SavedRoundResultCollection();
         }
 
+        SortResults(collection);
+
         return collection;
+    }
+
+    private static void SortResults(SavedRoundResultCollection collection)
+    {
+        collection.results.Sort((first, second) =>
+        {
+            int scoreComparison = second.score.CompareTo(first.score);
+
+            if (scoreComparison != 0)
+            {
+                return scoreComparison;
+            }
+
+            return first.completionTime.CompareTo(second.completionTime);
+        });
     }
 
     private void OnDestroy()

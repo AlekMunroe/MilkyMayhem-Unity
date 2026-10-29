@@ -23,7 +23,7 @@ Keyboard and mouse
                          Checkpoints, score, timer and round state
                               |             |              |
                               v             v              v
-                       CheckpointArrow  PlayerUIController  RoundCompleted
+                       CheckpointCompass  PlayerUIController  RoundCompleted
                                                           |       |     |
                                                           v       v     v
                                                    PlayerController   ScoreSaveSystem
@@ -97,7 +97,7 @@ Ground and wall detection now uses the `Environment` layer and checks angles of 
 
 **Responsibility:** Rotates the player horizontally and the camera vertically.
 
-`Cam Object` should use `CamPos` and `Main Camera` placed under it. `WorldController` disables it while the game is paused. `CameraController` listens to the `GameManager.RoundCompleted` state and disables itself when the round completes. The `WorldController` controls the cursor rather than the `CameraController`.
+`Cam Object` should use `CamPos` and `Main Camera` placed under it. `CameraController` loads the saved mouse sensitivity, field of view, the invertied camera and camera shake strength options. Camera shake uses a visual head bob effect. The `WorldController` controls the cursor rather than the `CameraController`.
 
 ## PlayerUIController
 
@@ -105,9 +105,7 @@ Ground and wall detection now uses the `Environment` layer and checks angles of 
 
 **Responsibility:** Updates the gameplay and round results UI.
 
-It reads `PlayerController.SprintStaminaPercent` and uses it to update the sprint slider. It listens for `CheckpointProgressChanged` and `TimeRemainingChange` to show the completed deliveries, remaining deliveries and time remaining.
-
-It also listens to `RoundCompleted` and shows if the round was completed or the timer ran out.
+It listens for `CheckpointProgressChanged`, `TimeRemainingChanged`, `RoundStarted`, and `RoundCompleted`. The UI is hidden until the round starts. The timer will flash red when the low time warning starts. The round completion UI shows if the player has completed the route or ran out of time.
 
 ## WorldController
 
@@ -126,8 +124,18 @@ It currently:
 - Tells `PlayerController` when to stop or resume
 - Disables or enables `CameraController`
 - Shows or hides the pause menu
+- Pauses the game when it loses focus
+- Contains `PauseChanged` for systems such as `BackgroundMusicController`
 
-Any new system which reads player input must also check the pause state. `MilkThrowing` already blocks its input while paused, while the cursor is unlocked or while UI is being used.
+Any new system that reads the player's input must also check the pause state. `MilkThrowing` stops input when paused, unfocused or inside the milk store, while the cursor is unlocked or while UI is being used.
+
+## BackgroundMusicController
+
+**Path:** `Assets/Scripts/World/BackgroundMusicController.cs`
+
+**Responsibility:** Switches the background music when the states change for inside the milk store, if the round is started, if in the pause menu or if the round is coompleted.
+
+Music is paused or resumed from its current posision when switching to the pause menu and back. The pause menu music always starts from the begining. When the low time warning starts, the round music's pitch is increased and the warning sound plays. A single beep will play for the last five seconds.
 
 ## MilkThrowing
 
@@ -165,9 +173,9 @@ It currently includes:
 - A function which allows a checkpoint to stop and position the crate
 - A seperate idle lifetime
 
-`MilkCrate` is now the only owner if projectile lifetime. `MilkThrowing` no longer destroys the projectiles after a seperate delay.
+`MilkCrate` is the only owner of the projectile lifetime.   MilkThrowing` doesnt schedule crates to be destroyed.
 
-When the lifetime or idle timer finishes, milk crates are marked as broken. This tells the `GameManager` it is destroyed and they will be destroyed after `breakDelay`. Successful delivery crates still become destroyed and this logic must be fixed for its removal behaviour.
+Undelivered crates are destroyed when the lifetime or idle timer finishes. If it has a successful delivery, the crate is kinematic and will not be destroyed.
 
 ## MilkCheckpoint
 
@@ -183,8 +191,9 @@ It currently:
 - Plays success or failure audio
 - Prevents the checkpoint from completing more than once
 - Sends the successful delivery and score amount to `GameManager`
+- Exposes `CheckpointSearchArea` to the compass UI
 
-The checkpoint Collider must have `Is Trigger` enabled. The success visual, failed visual, AudioSource, audio clips and landing point should all be assigned on its prefab.
+The checkpoint Collider must have `Is Trigger` enabled. The success visual, failed visual, AudioSource, audio clips, a landing point and search area should all be assigned on its prefab.
 
 ## GameManager
 
@@ -196,26 +205,33 @@ Important public parts:
 
 ```csharp
 public static GameManager Instance
+public int RouteNumber
 public int Score
 public int TotalCheckpoints
 public int RemainingCheckpoints
 public IReadOnlyList<MilkCheckpoint> Checkpoints
+public bool IsRoundRunning
 public float TimeRemaining
+public float LowTimeWarningThreshold
 public float CompletionTime
 public int BottlesBroken
 public event Action<int> ScoreChanged
 public event Action<int, int> CheckpointProgressChanged
 public event Action<float> TimeRemainingChanged
+public event Action RoundStarted
 public event Action RoundCompleted
+public event Action LowTimeWarningStarted
+public event Action<int> FinalCountdownSecond
 public bool RegisterCheckpointCleared(MilkCheckpoint checkpoint, int scoreAmount)
+public void StartRound()
 public void CountBrokenBottles()
 ```
 
-When the scene starts, the `GameManager` checks every checkpoint assigned and starts the round timer. Each checkpoint can only give one successful delivery.
+The round doesnt start when the scene first loads. `StartRound` randomises the route and instantiates one of the `CheckpointRote` prefabs. It will find the checkpoints and start the timer.
 
-The round will finish when every checkpoint is complete or the time left reaches zero. `RoundCompleted` tells the player and camera that the game is complete. The `GameManager` then enables the `RoundCompleteUI` and tells the `WorldController` to enable the mouse.
+The round will finish when every checkpoint is complete or the time left reaches zero. The low time event is called once at the warning threshold and the final countdown event is called for seconds5, 4, 3, 2 and 1.
 
-`Checkpoints` are exposed as an `IReadOnlyList` so the `checkpointArrow` can read the checkpoints without editing the list.
+`Checkpoints` are exposed as `IReadOnlyList` so `CheckpointCompass` can read then but not edit the list.
 
 ## ScoreSaveSystem
 
@@ -225,7 +241,7 @@ The round will finish when every checkpoint is complete or the time left reaches
 
 It saves the date, score, amount of completed deliveries, total deliveries, broken bottles, completion time and round number into PLayerPref with JSON using the `SavedRoundResults` key.
 
-Results are stored by their total score and the stored list can have a maximum of 50 games. Route number is currently assigned in the inspecor and will only stay as `1` until the route selection system is created.
+Results are stored by the highest score. The results with the same score are sorted by the lowest completion time. The list can have a maximum of 50 games. The route number comes from the `CheckpointRoute`.
 
 ## ScoresMenuController
 
@@ -252,7 +268,7 @@ Each score row prefab requires these child objects:
 
 Displays all settings and saves the values as playerprefs.
 
-Some values are not connected to the gameplay systems yet.
+Control hints are saved but arent used.
 
 Audio uses the exposed mixer parameters:
 
@@ -268,12 +284,38 @@ Audio uses the exposed mixer parameters:
 
 It also resets `Time.timeScale` in the start function for when the player returns from the game, the paused state does not carry over.
 
-## CheckpointArrow
-**Path:** `Assets/Scripts/Player/CheckpointArrow.cs`
+Editor and dev builds now show a development menu which can currently delete all PlayerPrefs data.
 
-**Responsibility:** It points to the closest available checkpoint.
+## CheckpointRoute
+**Path:** `Assets/Scripts/Player/CheckpointRoute.cs`
 
-The script reads `GameManager.Checkpoints` and ignores the completed checkpoints. It rotates the assigned arrow object to the closest available checkpoint and hides when no checkpoints are available.
+**Responsibility:** Finds the checkpoint route and exposes the route number.
+
+The route prefabs are stores in `Assets/Prefabs/Gameplay/CheckpointRoutes`. Each route should contain a set of checkpoint prefabs which have been tested.
+
+## CheckpointSearchArea
+
+**Path:** `Assets/Scripts/Throwable/CheckpointSearchArea.cs`
+
+**Responsibility:** The genral area for a delivery checkpoint.
+
+It uses a trigger SphereCollider to detect if the player is inside the search area.
+
+## CheckpointCompass
+
+**Path:** `Assets/Scripts/UI/Gameplay/CheckpointCompass.cs`
+
+**Responsibility:** POints the UI compass to the closest checkpoint search area.
+
+The compass UI hides while the player is inside the milk store or while the player is in a checkpoint search area.
+
+## MilkStoreExitTrigger
+
+**Path:** `Assets/Scripts/Triggers/MilkStoreExitTrigger.cs`
+
+**Responsibility:** Starts the round after the player leaves the milk store.
+
+The trigger uses the reference for outside to check if the player leaves the milk store in the correct direction. It then closes the milk store door and sets the player's controls correctly. it then calls `GameManager.StartRound`.
 
 ## RestartTrigger
 
@@ -330,6 +372,7 @@ These files are kept for reference but are not part of the current systems:
 - `Assets/Prefabs/_Depreciated/Player.prefab`: the old CharacterController player
 - `Assets/Scripts/Player/_Depreciated/Depreciated_PlayerController.cs`: the old player movement script
 - `Assets/Scripts/World/_Depreciated/EventHandler.cs`: an unused and empty placeholder
+- `Assets/Scripts/Player/_Depreciated/CheckpointArrow.cs`: the replaced 3D checkpoint arrow
 
 Do not use these files in new scripts or scenes. They should remain until the group confirms they are no longer needed by another branch or scene.
 
