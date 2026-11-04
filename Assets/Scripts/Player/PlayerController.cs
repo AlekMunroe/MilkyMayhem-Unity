@@ -546,7 +546,6 @@ public class PlayerController : MonoBehaviour
     public void CutHealth(float damageValue)
     {
         damageCut = damageValue;
-        healthRegenDelayTimer = healthRegenDelay;
     }
     /// <summary>
     /// Exclusively to regenerate the cut health when the player is not affected by it.
