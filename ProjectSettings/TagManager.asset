@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Projectile
   - Checkpoint
+  - Car
   layers:
   - Default
   - TransparentFX

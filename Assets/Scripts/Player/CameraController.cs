@@ -19,14 +19,6 @@ public class CameraController : MonoBehaviour
 
     private void Start()
     {
-        if(camObject == null)
-        {
-            Debug.LogError("CameraController: The camObject has not been assigned.");
-
-            enabled = false;
-            return;
-        }
-
         if (Mouse.current == null)
         {
             Debug.LogWarning("CameraController: Mouse is not detected. Please ensure a mouse is connected to the computer.");
@@ -34,6 +26,8 @@ public class CameraController : MonoBehaviour
             enabled = false;
             return;
         }
+
+        CheckNull(camObject);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -78,6 +72,16 @@ public class CameraController : MonoBehaviour
         if(GameManager.Instance != null)
         {
             GameManager.Instance.RoundCompleted -= HandleRoundCompleted;
+        }
+    }
+
+    private void CheckNull(UnityEngine.Object reference)
+    {
+        if (reference == null)
+        {
+            Debug.LogError(GetType().Name + ": A reference is not assigned", this);
+
+            enabled = false;
         }
     }
 }

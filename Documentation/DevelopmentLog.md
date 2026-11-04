@@ -379,6 +379,26 @@ Create the first playable vertical slice by connecting the exiting mechanics and
 - Test the player movements and refine the values for a smoother player experience.
 - Test sliding for any potential issues.
 
+## 4 November 2026 Added Health and Main Map
+- Added Health mechanics to the player. Health is a multiplier to the player's speed. As your health lowers, the less speed you will have on the ground.
+- Added `CarDamage` and `RoadWorkDamage` to Scripts. They handle changing the player's health when the player interacts with the obstacles.
+- Added `Car` and `RoadWork` to Prefab.
+- Imported CurrentMap1.unitypackage from Joe to Scene `CompleteMap`.
+
+## Testing Notes
+- While adding the `Car` obstacle, I attempted to have the player clip through the car if they were to take damage. Instead, the player will now be knocked back away from the car but still needs some additional work.
+- The damage calculation has changed a few times over the implementation and now has 2 variables to control the different damage types.
+
+## Problems
+- Due to some unfinished refinement in Air Strafing, the player could counteract the knockback given by the `Car` obstacle.
+
+## Next steps
+- Refine the values of Health and its effects from playtests to get a more enjoyable difficulty curve and player experience.
+- Complete the `CompleteMap` Scene with gameplay loop logic.
+- Review player controls and refine player movement.
+- Redesign backend coding to use Events and InputActions to further decouple mechanics and objects.
+- Add abilities for the player to use.
+
 ## Entry Template
 
 ### Date and Feature

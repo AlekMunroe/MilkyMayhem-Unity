@@ -150,7 +150,7 @@ MonoBehaviour:
   perm_canWallMove: 1
   perm_canAirMove: 1
   perm_canSlide: 1
-  speed: 15
+  maxSpeed: 15
   gravity: -45
   airStrafeSpeed: 1
   groundAcceleration: 140
@@ -176,7 +176,7 @@ MonoBehaviour:
   maxWallClingTime: 0.5
   wallClingBoost: 25
   wallStickForce: 10
-  wallSlideSpeed: 3
+  wallSlideSpeed: 5
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
   wallMomentumHalfLife: 20
@@ -193,6 +193,11 @@ MonoBehaviour:
   slideCooldown: 0.5
   playerCam: {fileID: 6156471599712849670}
   camSlidingHeight: 0.5
+  healthToSpeedMultiplier: 1
+  healthRegenDelay: 2.5
+  healthRegenAmount: 1
+  damageTaken: 0
+  healthRegenDelayTimer: 0
   playerAnim: {fileID: 1990719714502617060}
   slideAnimClip: {fileID: 7400000, guid: 871badd787165564dab678c07d5636e4, type: 2}
   resetAnimClip: {fileID: 7400000, guid: 30709b229084b45488f57359e1f71781, type: 2}
@@ -622,7 +627,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6329495720164743972
 Transform:
   m_ObjectHideFlags: 0

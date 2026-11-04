@@ -29,7 +29,8 @@ public class WorldController : MonoBehaviour
     void Start()
     {
         cameraController = PlayerController.Instance.GetCameraController();
-        
+        ResetGameSpeed();
+
         LockMouse();
     }
 
@@ -52,7 +53,7 @@ public class WorldController : MonoBehaviour
         {
             isGamePaused = false;
             LockMouse();
-            SetGameSpeed(1f);
+            ResetGameSpeed();
             cameraController.enabled = true;
             PlayerController.Instance.UpdatePause(false);
             pauseMenuUI.SetActive(false);
