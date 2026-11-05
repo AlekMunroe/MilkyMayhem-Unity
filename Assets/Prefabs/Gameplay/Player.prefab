@@ -169,8 +169,7 @@ MonoBehaviour:
   jumpReleaseMultiplier: 0.5
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
-  wallClingBoost: 10
-  wallStickForce: 10
+  wallClingBoost: 20
   wallSlideSpeed: 3
   wallJumpForwardForce: 8
   wallDetachSpeed: 2

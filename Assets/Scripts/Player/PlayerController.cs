@@ -106,13 +106,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float damageMultiplier = 1f;
     [SerializeField] private float healthRegenDelay = 2.5f;
     [Tooltip("Amount of health refen per tick")]
-    [SerializeField] private float healthRegenAmount = 1f;
+    [SerializeField] private float healthRegenAmount = 2f;
     [Tooltip("PlayerHealth should always be set to 100. This value will affect how much health impacts the player speed")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float damageTaken;
     [SerializeField] private float damageCut;
 
-    private float healthRegenDelayTimer;
+    public float healthRegenDelayTimer;
     private float healthSpeedMultiplier = 1f;
 
     public float CurrentHealth => Mathf.Clamp(maxHealth - damageCut - (damageTaken * damageMultiplier), 0f, maxHealth);
