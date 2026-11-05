@@ -8,7 +8,6 @@ public class PlayerUIController : MonoBehaviour
     [SerializeField] private PlayerController playerController;
 
     [Header("UI Elements")] 
-    [SerializeField] private Slider sprintSlider;
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private TMP_Text timeText;
 
@@ -24,7 +23,6 @@ public class PlayerUIController : MonoBehaviour
 
     void Awake()
     {
-        CheckNull(sprintSlider);
         CheckNull(scoreText);
         CheckNull(timeText);
         CheckNull(roundSummaryText);
@@ -33,8 +31,6 @@ public class PlayerUIController : MonoBehaviour
         CheckNull(deliveryInfo);
         CheckNull(timer);
         CheckNull(compass);
-
-        sprintSlider.interactable = false;
 
         defaultTimeTextColour = timeText.color;
     }
@@ -51,18 +47,6 @@ public class PlayerUIController : MonoBehaviour
         UpdateDeliveryText(GameManager.Instance.RemainingCheckpoints, GameManager.Instance.TotalCheckpoints);
         UpdateTimeText(GameManager.Instance.TimeRemaining);
         SetRoundUIActive(GameManager.Instance.IsRoundRunning);
-    }
-
-    void Update()
-    {
-        UpdateSprintSlider();
-    }
-
-    private void UpdateSprintSlider()
-    {
-        float sprintSliderValue = playerController.SprintStaminaPercent;
-        
-        sprintSlider.value = sprintSliderValue;
     }
 
     /// <summary>
