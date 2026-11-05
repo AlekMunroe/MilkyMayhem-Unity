@@ -88,7 +88,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 952651698440959581}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -142,7 +142,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0b11580fb5763ef7ae27ea955dcbf47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RBPlayerController
-  perm_canSprint: 1
   perm_canJump: 1
   perm_canParkourJump: 1
   perm_canGroundMove: 1
@@ -156,11 +155,6 @@ MonoBehaviour:
   groundAcceleration: 140
   groundDeceleration: 190
   milkStoreMovementSpeed: 7
-  sprintSpeed: 10
-  maxSprintStamina: 2
-  sprintDrainSpeed: 1
-  sprintRegenerationSpeed: 0.75
-  sprintRegenerationDelay: 1
   jumpHeight: 7
   forwardJumpBoost: 3
   coyoteTime: 0.15

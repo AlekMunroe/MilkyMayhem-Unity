@@ -64,7 +64,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallClingBoost = 20f;
-    [SerializeField] private float wallStickForce = 10f;
     [SerializeField] private float wallSlideSpeed = 5f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
@@ -414,8 +413,6 @@ public class PlayerController : MonoBehaviour
         float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
 
         velocityAlongWall *= momentumMultiplier;
-
-        velocityAlongWall += wallNormal * -wallStickForce;
 
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
