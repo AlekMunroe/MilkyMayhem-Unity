@@ -142,13 +142,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0b11580fb5763ef7ae27ea955dcbf47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RBPlayerController
-  perm_canSprint: 0
+  perm_canSprint: 1
   perm_canJump: 1
   perm_canParkourJump: 1
   perm_canGroundMove: 1
   perm_canWallMove: 1
   perm_canAirMove: 1
   perm_canSlide: 1
+  perm_healthEffects: 1
   speed: 25
   gravity: -45
   airStrafeSpeed: 1
@@ -193,6 +194,12 @@ MonoBehaviour:
   slideCooldown: 0.5
   playerCam: {fileID: 6156471599712849670}
   camSlidingHeight: 0.5
+  damageMultiplier: 1
+  healthRegenDelay: 2.5
+  healthRegenAmount: 1
+  maxHealth: 100
+  damageTaken: 0
+  damageCut: 0
   playerAnim: {fileID: 1990719714502617060}
   slideAnimClip: {fileID: 7400000, guid: 871badd787165564dab678c07d5636e4, type: 2}
   resetAnimClip: {fileID: 7400000, guid: 30709b229084b45488f57359e1f71781, type: 2}
