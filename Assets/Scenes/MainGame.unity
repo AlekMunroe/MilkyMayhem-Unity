@@ -19265,8 +19265,6 @@ MonoBehaviour:
   checkpointRoutePrefabs:
   - {fileID: 3175456424882271706, guid: c6889d2ea45b358448689cee98f4525e, type: 3}
   - {fileID: 6182056959837921960, guid: df80c0159f2dd61439d26d1005f1c698, type: 3}
-  - {fileID: 6905601260478927934, guid: 3f9220adc0a52a443b0910ff9528c748, type: 3}
-  - {fileID: 290782638003086299, guid: c218b781adb71a2489d090e6425a38a4, type: 3}
   roundDuration: 120
   lowTimeWarningThreshold: 30
   RoundCompleteUI: {fileID: 2040402691}
