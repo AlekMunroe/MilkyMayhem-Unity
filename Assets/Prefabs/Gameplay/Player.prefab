@@ -167,6 +167,10 @@ MonoBehaviour:
   minWallAngle: 70
   maxWallAngle: 110
   jumpReleaseMultiplier: 0.5
+  maxMountHeight: 1.8
+  mountCheckDistance: 0.25
+  mountForwardDistance: 0.2
+  mountClearance: 0.05
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
   wallClingBoost: 20
@@ -193,6 +197,7 @@ MonoBehaviour:
   maxHealth: 100
   damageTaken: 0
   damageCut: 0
+  healthRegenDelayTimer: 0
   playerAnim: {fileID: 1990719714502617060}
   slideAnimClip: {fileID: 7400000, guid: 871badd787165564dab678c07d5636e4, type: 2}
   resetAnimClip: {fileID: 7400000, guid: 30709b229084b45488f57359e1f71781, type: 2}

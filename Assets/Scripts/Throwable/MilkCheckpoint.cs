@@ -2,8 +2,6 @@ using UnityEngine;
 
 public class MilkCheckpoint : MonoBehaviour
 {
-    [Header("<color=red>Development</color>")]
-    [SerializeField] private GameObject _dev_visualRepresentation;
 
     [Header("Delivery")]
     [SerializeField, Min(0f)] private float maximumSafeDeliverySpeed = 10f;
@@ -12,6 +10,7 @@ public class MilkCheckpoint : MonoBehaviour
     [SerializeField] private CheckpointSearchArea searchArea;
 
     [Header("Feedback")]
+    [SerializeField] private GameObject defaultDeliveryVisual;
     [SerializeField] private GameObject successfulDeliveryVisual;
     [SerializeField] private GameObject failedDeliveryVisual;
     [SerializeField] private AudioSource audioSource;
@@ -29,11 +28,6 @@ public class MilkCheckpoint : MonoBehaviour
         Collider checkpointCollider = GetComponent<Collider>();
         checkpointCollider.isTrigger = true;
 
-        if(_dev_visualRepresentation == null)
-        {
-            Debug.LogWarning("MilkCheckpoint: The dev visual representation for the checkpoint is not assigned");
-        }
-
         if(successfulDeliveryVisual != null)
         {
             successfulDeliveryVisual.SetActive(false);
@@ -42,6 +36,11 @@ public class MilkCheckpoint : MonoBehaviour
         if(failedDeliveryVisual != null)
         {
             failedDeliveryVisual.SetActive(false);
+        }
+        
+        if(defaultDeliveryVisual != null)
+        {
+            defaultDeliveryVisual.SetActive(true);
         }
 
         if(searchArea == null)
@@ -52,14 +51,6 @@ public class MilkCheckpoint : MonoBehaviour
         if(searchArea == null)
         {
             Debug.LogWarning("MilkCheckpoint: CheckpointSearchArea is missing");
-        }
-    }
-
-    private void Start()
-    {
-        if (!Application.isEditor && !Debug.isDebugBuild)
-        {
-            _dev_visualRepresentation.SetActive(false);
         }
     }
 
@@ -102,11 +93,6 @@ public class MilkCheckpoint : MonoBehaviour
     /// </summary>
     private void ShowSuccessfulDelivery()
     {
-        if (_dev_visualRepresentation != null)
-        {
-            _dev_visualRepresentation.SetActive(false);
-        }
-
         if (failedDeliveryVisual != null)
         {
             failedDeliveryVisual.SetActive(false);
@@ -114,6 +100,7 @@ public class MilkCheckpoint : MonoBehaviour
 
         if (successfulDeliveryVisual != null)
         {
+            defaultDeliveryVisual.SetActive(false);
             successfulDeliveryVisual.SetActive(true);
         }
 
@@ -136,6 +123,7 @@ public class MilkCheckpoint : MonoBehaviour
 
         if (failedDeliveryVisual != null)
         {
+            defaultDeliveryVisual.SetActive(false);
             failedDeliveryVisual.SetActive(true);
         }
 

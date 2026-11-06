@@ -125,3 +125,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e525ed1a3ce39c97882c54d686fe604c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadWorkDamage
+  baseDamage: 30

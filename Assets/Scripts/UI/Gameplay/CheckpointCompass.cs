@@ -1,3 +1,4 @@
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -12,6 +13,7 @@ public class CheckpointCompass : MonoBehaviour
 
     [Header("Rotation")]
     [SerializeField, Min(0f)] private float rotationSpeed = 360f;
+    [SerializeField, Min(0f)] private float searchSpinSpeed = 1080f;
 
     [Tooltip("Use this if the compass image doesnt point up")]
     [SerializeField] private float imageRotationOffset;
@@ -67,7 +69,7 @@ public class CheckpointCompass : MonoBehaviour
 
         CheckpointSearchArea closestArea = FindClosestSearchArea(out bool playerInsideArea);
 
-        if(closestArea == null || playerInsideArea)
+        if(closestArea == null)
         {
             SetCompassVisible(false);
 
@@ -76,7 +78,14 @@ public class CheckpointCompass : MonoBehaviour
 
         SetCompassVisible(true);
 
-        PointTowardsArea(closestArea);
+        if (playerInsideArea)
+        {
+            SpinCompass();
+        }
+        else
+        {
+            PointTowardsArea(closestArea);
+        }
     }
 
     private CheckpointSearchArea FindClosestSearchArea(out bool playerInsideArea)
@@ -138,6 +147,13 @@ public class CheckpointCompass : MonoBehaviour
         float targetRotation = -directionAngle + imageRotationOffset;
         float currentRotation = compassNeedle.localEulerAngles.z;
         float newRotation = Mathf.MoveTowardsAngle(currentRotation, targetRotation, rotationSpeed * Time.deltaTime);
+
+        compassNeedle.localRotation = Quaternion.Euler(0f, 0f, newRotation);
+    }
+
+    private void SpinCompass()
+    {
+        float newRotation = compassNeedle.localEulerAngles.z - searchSpinSpeed * Time.deltaTime;
 
         compassNeedle.localRotation = Quaternion.Euler(0f, 0f, newRotation);
     }
