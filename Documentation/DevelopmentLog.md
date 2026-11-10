@@ -589,6 +589,98 @@ Add the milk store and implement delayed round starting, checkpoint routes and r
 - Find out why the performance temporarily drops when leaving the milk store.
 - Decide if the round timer should change based on the amount of checkpoints.
 
+## 04 November 2026
+
+### Aim
+Merge the new environment and gameplay mechanics into the current latest MainGame version along with fixing any bugs that are found after the merge.
+
+### Work completed
+- Updated the timer UI with the new textures
+- Merged the two projects together
+- Fixed the PlayerController's public fields to private serialized fields
+- Removed the `CompleteMap` scene
+- Organised assets that were placed in the root of the project
+- Fixed health regeneration's frame rate dependency
+- Stopped the health system from overwriting the normal move speed
+- Added `ResetHealth` to the script
+- Removed the sprinting functionality
+- Added a directional light to the new environment
+- Updated `CarDamage` to detect the front of the car using it's forward direction
+- Replaced the exact collision vector with a dot threshold
+- Added a PlayerController reference to `CarDamage`
+
+### Testing
+- The map loads inside `MainGame`
+- The normal health regeneration is no longer frame rate dependent
+- The health can be reset using the `ResetHealth` function
+- The directional light works without visual glitches
+- Found and fixed colliders set incorrectly
+- Found the car knockback force needs testing and updating
+- The movement problems around building edges and seperate wall colliders have been dampened by the collision pdates
+
+### Problems
+- Multiple models are missing colliders or their colliders dont match their mesh
+- The player can float or glide against the bottom edges of some buildings
+- Moving between seperate wall colliders can push the player backwards
+- The car knockback force is too powerful
+- The timer texture doesnt properly fit in the UI
+
+### Next steps
+- Rebuild and test the environment
+- Test and update the car knockback force
+- Continue testing the player movement and fix any bugs which are found.
+
+## 05 November 2026
+
+### Aim
+To improve the movement through the new environment, update the rest of the collision, fix game state issues and start updating the temporary visuals with the final ones.
+
+### Work completed
+- Hid the player's mesh to hide its shadow
+- Attempted to run the game on the university machines. Cloudpaging Player failed to authorise the application.
+- Fixed the wall bounce back which was caused by the old `wallStickForce` calculation
+- Imported a temporary toon water asset and added it to the `MainGame`
+- Added the out of bounds trigger under the water
+- Fixed mouse input not resetting when `MainGame` is loaded again
+- Added automatic mounting on small objects
+- Stopped small mountable objects from acting as walls
+- Added child BoxColliders to the world prefabs
+- Removed the duplicate fire hydrants
+- Set the final player and map scales
+- Updated the checkpoint compass so it spins when the player is inside the checkpoint search area
+- Added `HasRoundEnded` to the `GameManager`
+- Updated `WorldController` so the pause menu cant open after the round ends
+- Imported a temporary cartoon skybox
+- Updated the directional light to make the world feel brighter and more cartoony
+- Imported FX Magic Plane II as a temporary checkpoint feedback visual
+- Added default, successful and failed states to `MilkCheckpoint`
+
+### Testing
+- Mouse input resets when the game scene loads
+- The wall bounding back problem no longer happens when removing the old calculation
+- Small objects are not treated as walls
+- Movement feels smoother with the updated colliders
+- The compass spins when the player is inside the checkpoint search area
+- Escape and focus loss dont work when the round ends
+- Viewing the map from a far distance causes a large FPS drop
+
+### Problems
+- The wall running movement feels too slow and sticky
+- The player falls too slow whilst against some walls
+- The checkpoint routes havent been updated for the new environment
+- The checkpoint search radius is too large
+- The new water, skybox and checkpoint visuals are temporary
+- The game requires LOD models and more optimisation
+- The university playtest was temporarily blocked due to the Cloudpaging Player error.
+
+### Next steps
+- Update and test every checkpoint route
+- Continue testing the updated colliders and mounting
+- Restore the broken milk crate functionality
+- Update the checkpoint sounds
+- Test the car collision and knockback force
+- Add the new LOD models when they are available
+
 ## Entry Template
 
 ### Date and Feature

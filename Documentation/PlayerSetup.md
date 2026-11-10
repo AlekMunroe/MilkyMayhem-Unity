@@ -65,6 +65,8 @@ The CapsuleCollider should fit the standing player and be centred on the root ob
 - Wall detachment
 - Pause and round completion integration
 - Perminant controls to disable features
+- Automatic mounting for small objects
+- Health based speed reduction and regeneration
 
 ### Permanent Feature Controls
 
@@ -72,15 +74,17 @@ The `Perm Can` fields allow incomplete features to be disabled without deleting 
 
 The prefab currently has:
 
-- Sprinting disabled
 - Normal jumping enabled
 - Parkour jumping enabled
 - Ground movement enabled
 - Wall movement enabled
 - Air movement enabled
 - Sliding enabled
+- Health effects enabled
 
 Do not change any values without testing the complete player prefab.
+
+Sprinting functionality has been removed from the `PlayerController`.
 
 ### Ground and Wall Checks
 
@@ -96,6 +100,16 @@ The current system uses the normal of the surface to choose if its a ground or a
 The current wall movement keeps mometum moving along the wall and gradually reduces it using `wallMomentumHalfLife`. `wallDetachSpeed` controls how long it takes the player to detach from a wall. `wallReattachDelay` stops the player from sttaching to a wall immediately after detaching.
 
 Floor only objects are sometimes treated as walls when the collider has enough surgace angle. Do not add another ground only layer until the next update is completed.
+
+### Automatic Mounting
+
+The player can automatically mount smaller objects such as benches and bins.
+
+1. Put the object on the `Environment` layer
+1. Give the object a BoxCollider
+1. Keep the height shorter than the player's `maxMountHeight`
+
+Smaller objects below the height do not effect the wall detection system and are never treated as walls.
 
 ## CameraController Setup
 
@@ -118,7 +132,7 @@ Horizontal look rotates the player. Vertical look rotates the camera's pivot. `W
 1. Give the search area a SphereCollider set to Trigger.
 1. Assign the route prefab to the `GameManager`.
 
-The compass will point to the cloasest checkpoint search area. It will hide when the player is inside the milk store or inside a search area.
+The compass will point to the closest checkpoint search area. It is hidden before the round starts and spions when the player is inside the checkpoint search area.
 
 ## Milk Throwing Setup
 
@@ -136,14 +150,12 @@ Required setup:
 
 ## Player UI Setup
 
-1. Create a Slider with a minimum of `0` and maximum of `1`.
-2. Add `PlayerUIController` to the gameplay UI controller object.
-3. Assign the active Rigidbody `PlayerController`.
-4. Assign the sprint Slider.
-5. Assign the delivery progress and remaining time TMP text objects.
-6. Assign the round results and round summary TMP text objects.
-7. Assign the delivery infomration, timer and compass GameObjects.
-8. Keep `PlayerUIController` on an object which will stay active when `RoundCompleteUI` hides.
+1. Add `PlayerUIController` to the gameplay UI controller object.
+2. Assign the active Rigidbody `PlayerController`.
+3. Assign the delivery progress and remaining time TMP text objects.
+4. Assign the round results and round summary TMP text objects.
+5. Assign the delivery infomration, timer and compass GameObjects.
+6. Keep `PlayerUIController` on an object which will stay active when `RoundCompleteUI` hides.
 
 The controller listens to the GameManager's events. The UI is hidden until the round starts. The timer flashes red when the low time warning starts.
 
@@ -180,13 +192,12 @@ Before committing player or scene changes, verify:
 - Left mouse throws a crate from `ThrowOrigin`.
 - Right mouse places a crate without bounce behaviour.
 - Pausing stops player, camera and throwing input and shows the cursor.
-- The sprint Slider follows the active player's stamina.
 - Successful deliveries update score and checkpoint progress only once.
 - Failed deliveries show feedback and can be retried successfully.
 - The Console contains no errors caused by missing references.
 - Every floor and wall uses the `Environment` layer.
 - The compass points towards the closest available checkpoint search area.
-- The comapss hides when the player is inside the checkpoint search area.
+- The compass spins when the player is inside the checkpoint search area.
 - The delivery and timer UI show the correct values.
 - Round completion stops the player and camera.
 - Running out of time shows the failed round results.
@@ -200,3 +211,7 @@ Before committing player or scene changes, verify:
 - Leaving the milk store closes the door and starts the round.
 - Throwing and placing are blocked inside the milk store.
 - The 30 second warning runs correctly.
+- The player automatically mounts smaller objects
+- Small objects are not treated as walls
+- Losing health reduces the players movement speed
+- Escape and losing focus doesnt open the pause menu after the round completes.

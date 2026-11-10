@@ -61,9 +61,13 @@ Current features:
 - Momentum based sliding
 - Permanent controls which can disable incomplete features
 
-Sprinting is in the script but is disabled on the player prefab. Sprinting is being depreciated. Sliding has been reimplemented and `PermCanSlide` is enabled. The slide uses the player's current Rigidbody velocity.
+Sprinting has noe been removed from the `PlayerController`. Sliding has been reimplemented and `PermCanSlide` is enabled. The slide uses the player's current Rigidbody velocity.
 
 Ground, wall and air movement use `UpdateGroundMovement`, `UpdateWallMovement` and `UpdateAirMovement`. Air direction changes are limited by `MaxAirSpeed`.
+
+The player can automatically mount small objects which are shorter than `maxMountHeight`. Smaller objects act only as walkable surfaces and are not detected by the wall detection system. The objects still require box colliders and to be tagged.
+
+The health system decreases the players movement speed when their health is lower. `ResetHealth` can reset both the damage values and restore the players health speed back to default.
 
 Important public parts:
 
@@ -72,6 +76,10 @@ public static PlayerController Instance
 public float SprintStaminaPercent
 public void UpdatePause(bool isPaused)
 public CameraController GetCameraController()
+public float CurrentHealth
+public void ModifyHealth(float damageValue)
+public void CutHealth(float damageValue)
+public void ResetHealth()
 ```
 
 The script requires:
@@ -126,6 +134,7 @@ It currently:
 - Shows or hides the pause menu
 - Pauses the game when it loses focus
 - Contains `PauseChanged` for systems such as `BackgroundMusicController`
+- Stops pausing when the round has ended
 
 Any new system that reads the player's input must also check the pause state. `MilkThrowing` stops input when paused, unfocused or inside the milk store, while the cursor is unlocked or while UI is being used.
 
@@ -193,7 +202,7 @@ It currently:
 - Sends the successful delivery and score amount to `GameManager`
 - Exposes `CheckpointSearchArea` to the compass UI
 
-The checkpoint Collider must have `Is Trigger` enabled. The success visual, failed visual, AudioSource, audio clips, a landing point and search area should all be assigned on its prefab.
+The checkpoint Collider must have `Is Trigger` enabled. The default visual, success visual, failed visual, AudioSource, audio clips, landing point and search area should all be assigned on the prefab. The default visual is shown before the delivery and hides along with the success or failed visual being enabled.
 
 ## GameManager
 
@@ -211,6 +220,7 @@ public int TotalCheckpoints
 public int RemainingCheckpoints
 public IReadOnlyList<MilkCheckpoint> Checkpoints
 public bool IsRoundRunning
+public bool HasRoundEnded
 public float TimeRemaining
 public float LowTimeWarningThreshold
 public float CompletionTime
@@ -232,6 +242,8 @@ The round doesnt start when the scene first loads. `StartRound` randomises the r
 The round will finish when every checkpoint is complete or the time left reaches zero. The low time event is called once at the warning threshold and the final countdown event is called for seconds5, 4, 3, 2 and 1.
 
 `Checkpoints` are exposed as `IReadOnlyList` so `CheckpointCompass` can read then but not edit the list.
+
+`HasRoundEnded` is set to true only when the round finishes. `WorldController` uses it to stop the pause menu from opening over the round completion screen.
 
 ## ScoreSaveSystem
 
@@ -305,9 +317,9 @@ It uses a trigger SphereCollider to detect if the player is inside the search ar
 
 **Path:** `Assets/Scripts/UI/Gameplay/CheckpointCompass.cs`
 
-**Responsibility:** POints the UI compass to the closest checkpoint search area.
+**Responsibility:** Points the UI compass to the closest checkpoint search area.
 
-The compass UI hides while the player is inside the milk store or while the player is in a checkpoint search area.
+The compass UI hides while the player is inside the milk store. During gameplay, it points to the closest active checkpoint search area. When the player enters the search area, the compass stays visible and spins to show the player should search near their current area for the delivery location.
 
 ## MilkStoreExitTrigger
 
@@ -348,6 +360,24 @@ Restarting currently reloads `MainGame`. A dedicated reset system would work muc
 **Responsibility:** Controls the pause menu buttons.
 
 It resumes the game through `WorldController`, shows or hides the return confirmation and loads the selected menu scene. It returns to the main menu scene. The `MainMenuController` and `WorldController` reset the game's speed when the scenes start.
+
+## CarDamage
+
+**Path:** `Assets/Scripts/Obstacles/CarDamage.cs`
+
+**Responsibility:** Gives damage and knocks back the player when they are hit by the car.
+
+The script ignores collisions on the top and bottom of the car. It uses the cars own direction to detect the front collisions.
+
+This needs further testing becuase the knockback force is too powerful. The final car movement system is not yet implemented.
+
+## RoadWorkDamage
+
+**Path:** `Assets/Scripts/Obstacles/RoadWorkDamage.cs`
+
+**Responsibility:** Temporarily lowers the players health while they are inside the roadwork trigger
+
+Cut health starts regenerating immediately after the player leaves the trigger.
 
 ## Development Tools
 

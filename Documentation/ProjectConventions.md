@@ -24,6 +24,13 @@ Before sending a model to a developer:
 8. Test the exported model in Unity `6000.3.19f1`.
 9. Make sure there are no missing meshes, pink materials or Console errors before sending it.
 
+Looking at the entire environment models from a long distance should include LOD variants:
+- `LOD0`: The original full detail model
+- `LOD1`: a medium distance model with a lower polygon count
+- `LOD2`: A simple long distance model or silhouette
+
+Every LOD version must use the same scae, position, rotation and pivot so it can be added to Unity's `LODGroup`.
+
 ### Submitting Model Files
 
 Send models to a developer as a ZIP file which is separate from the Unity project. Do not place unreviewed models directly into the project's `Assets` folder or commit them to GitHub. This allows the developer to check and organise the files before adding them to the main project.
@@ -136,7 +143,7 @@ Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`
 
 The old CharacterController player and the empty `EventHandler` and the replaced `CheckpointArrow` are currently stored in `_Depreciated` folders. They are not part of the current game.
 
-Sprinting is depreicated. Its code is still part of the `PlayerController` but `Perm Can Sprint` is disabled.
+Sprinting is depreicated and its functionality has been removed from the `PlayerController`.
 
 ## Naming
 
@@ -175,6 +182,12 @@ Do not use seperate Ground or Wall laters for the player. The current `PlayerCon
 Do not use negative scale on the objects which require BoxColliders. Unity forces the colliders size to be positive and it can cause unexpected results. Apply the scale in the 3D modelling software before exporting the models.
 
 After importing or changing the environment, test walking, slopes, jumping next to walls, wall clinging, wall detachment and wall jumping.
+
+Use a simple child BoxCollider for all objects where required. Multiple BoxCollider objects can be added for irregular shapes. Do not use one complex MeshCollider for the entire city environment.
+
+The collider must inherit the same scale as the mesh. If the mesh is scaled through a child object, place the colliders under that scaled object.
+
+Small objects used for mounting must use the `Environment` layer as normal.
 
 ## Scenes and Prefabs
 

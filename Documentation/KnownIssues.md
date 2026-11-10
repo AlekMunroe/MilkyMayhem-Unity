@@ -13,17 +13,15 @@ The reimplementation of sliding is back. It keeps the existing momentum. `PermCa
 
 **Next action:** Test the collider, camera movement, animations and cooldown.
 
-### Wall movement requires testing in the grey box
+### Wall movement requires testing in the city environment
 
-**Status:** Testing required
+**Status:** In active development
 
-The current player has a vertical wall cling boost, wall sliding, wall detachment, retained wall momentum, air strafind and wall jumping. Ground, wall and air movement now have seperate perminant controls.
+The current player has a vertical wall cling boost, wall sliding, wall detachment, retained wall momentum, air strafind and wall jumping. 
 
-A problem exists when the player jumps away from a wall, they can move back towards it at a higher location.
+The old bouncing back problem which was caused by the old wall stick force calculation has been fixed. Wall running still feels too slow and sticky at lower speeds. the player falls too slowly while touching some walls.
 
-Floor only objects can sometimes be trested as walls due to the `Environment` layer.
-
-**Next action:** Investigate wall movement problems. Retest wall edges and corners for floor only object. Test wall jumping and airborne direction changes.
+**Next action:** Update and retest wall running, normal jumps next to walls, wall sliding, wall detachment, wall edges and movement between multiple colliders.
 
 ### Rigidbody gravity differs between the prefab and runtime
 
@@ -37,7 +35,15 @@ The player prefab currently stores `Use Gravity` as enabled, while `PlayerContro
 
 **Status:** Balancing required
 
-Acceleration, deceleration, air control, sprinting, jump forces, wall behaviour and custom gravity work but have not been balanced for the final environment.
+Acceleration, deceleration, air control, jump forces, wall behaviour and custom gravity work but have not been balanced for the final environment.
+
+### Automatic mounting needs its final testing and approval
+
+**Status:** Testing and approval required
+
+The player can automatically mount smaller objects below the `maxMountHeight`.
+
+**Next action:** Test running into benches, bins and other mountable objects from multiple directions and confirm they are mounted correctly. Confirm they are never treated as walls.
 
 ## Milk Throwing and Placement
 
@@ -65,12 +71,6 @@ The gameplay UI shows completed deliveries, remaining deliveries and the remaini
 
 The current designs are temporary and will be replaced when the final UI designs are available.
 
-### Development visual null handling is incomplete
-
-**Status:** Open
-
-`MilkCheckpoint` warns when its development visual is missing, but one startup path can still try to disable that object without a null check.
-
 ### Checkpoint feedback is provisional
 
 **Status:** Accepted for vertical slice
@@ -78,6 +78,24 @@ The current designs are temporary and will be replaced when the final UI designs
 Crates entering checkpoints now comlete deliveries without checking the impact speed. The old high speed function has now been removed. Successful feedback still work but failed fields exist with no way to fail.
 
 **Next action:** Decide if we can fail deliveries in any way.
+
+### Failed rounds are saved
+
+**Status:** Open
+
+`ScoreSaveSystem` listens to `RoundCompleted` and saves both successful and failed rounds.
+
+**Next action:** Decide if failed attempts should be stored separately or saved at all.
+
+## Hazards
+
+### Car knockback needs balancing
+
+**Status:** Testing required
+
+`CarDamage` nor uses the cars forward direction and dot product threshold to detect the player from the front. The current knockback force is still too powerful.
+
+**Next action:** Add the cars movement system then test damage and knockback at different speeds and angles.
 
 ## Pause and Input
 
@@ -132,16 +150,6 @@ Head bobbing is visual but movement seems different near some wall edges.
 
 **Next action:** Add missing reference and repeated trigger protection.
 
-### Negative scale crate BoxCollider warnings
-
-**Status:** Waiting for final environment model
-
-Some grey box objects are on a negative scale. Unity forces the BoxCollider size to be positive and warns of this error.
-
-**Next action:** 3D designers to send the correct scale and collider setup for the vianl environment moels.
-
-Warnings can be ignored until we recieve the updated model.
-
 ### TutorialScene is missing GameManager
 
 **Status:** Open
@@ -157,3 +165,11 @@ Warnings can be ignored until we recieve the updated model.
 A performance drop is clearly noticable when the player leaves the milk store. It is suspected that this is due to the round starting.
 
 **Next action:** Look at the route instanting, checkpoint creation, music switching or the UI enabling when the round starts.
+
+### Performance drops when viewing the environment from a distance
+
+**Status:** Waiting for LOD models
+
+The frame rate drops when a large portion of the city is visible from a distance. The environment uses the full detail models at every distance.
+
+**Next action:** Setup LOD0, LOD1, and LOD2 models when the 3D designers provide them.
