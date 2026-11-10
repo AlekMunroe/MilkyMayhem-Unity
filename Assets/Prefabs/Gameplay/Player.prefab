@@ -88,7 +88,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 952651698440959581}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -142,24 +142,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0b11580fb5763ef7ae27ea955dcbf47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RBPlayerController
-  perm_canSprint: 0
   perm_canJump: 1
   perm_canParkourJump: 1
   perm_canGroundMove: 1
   perm_canWallMove: 1
   perm_canAirMove: 1
   perm_canSlide: 1
+  perm_healthEffects: 1
   speed: 25
   gravity: -45
   airStrafeSpeed: 1
   groundAcceleration: 140
   groundDeceleration: 190
   milkStoreMovementSpeed: 7
-  sprintSpeed: 10
-  maxSprintStamina: 2
-  sprintDrainSpeed: 1
-  sprintRegenerationSpeed: 0.75
-  sprintRegenerationDelay: 1
   jumpHeight: 7
   forwardJumpBoost: 3
   coyoteTime: 0.15
@@ -172,10 +167,13 @@ MonoBehaviour:
   minWallAngle: 70
   maxWallAngle: 110
   jumpReleaseMultiplier: 0.5
+  maxMountHeight: 1.8
+  mountCheckDistance: 0.25
+  mountForwardDistance: 0.2
+  mountClearance: 0.05
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
-  wallClingBoost: 10
-  wallStickForce: 10
+  wallClingBoost: 20
   wallSlideSpeed: 3
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
@@ -193,6 +191,13 @@ MonoBehaviour:
   slideCooldown: 0.5
   playerCam: {fileID: 6156471599712849670}
   camSlidingHeight: 0.5
+  damageMultiplier: 1
+  healthRegenDelay: 2.5
+  healthRegenAmount: 1
+  maxHealth: 100
+  damageTaken: 0
+  damageCut: 0
+  healthRegenDelayTimer: 0
   playerAnim: {fileID: 1990719714502617060}
   slideAnimClip: {fileID: 7400000, guid: 871badd787165564dab678c07d5636e4, type: 2}
   resetAnimClip: {fileID: 7400000, guid: 30709b229084b45488f57359e1f71781, type: 2}
