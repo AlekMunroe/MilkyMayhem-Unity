@@ -133,6 +133,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
+    public bool IsGrounded => isGrounded;
 
     private Vector3 storedWallMomentum;
     private Vector3 maxWallMomentum;
@@ -634,6 +635,39 @@ public class PlayerController : MonoBehaviour
         damageCut = 0f;
         healthRegenDelayTimer = 0f;
         healthSpeedMultiplier = 1f;
+    }
+
+    /// <summary>
+    /// Resets the players state and velocity then move the player to a location
+    /// </summary>
+    /// <param name="respawnPosition">The player's new position</param>
+    /// <param name="respawnRotation">The player's new rotation</param>
+    public void RespawnAt(Vector3 respawnPosition, Quaternion respawnRotation)
+    {
+        // Reset all states
+        if (isSliding)
+        {
+            StopSliding();
+        }
+
+        isGrounded = false;
+        isWallClinging = false;
+        canWallClimb = false;
+        wallClingTimer = 0f;
+        wallReattachTimer = wallReattachDelay;
+        coyoteTimer = 0f;
+        jumpBufferTimer = 0f;
+        jumpReleased = true;
+        movementInput = Vector2.zero;
+        storedWallMomentum = Vector3.zero;
+        playerRigidbody.linearVelocity = Vector3.zero;
+        playerRigidbody.angularVelocity = Vector3.zero;
+
+        // Move the player immediately
+        playerRigidbody.position = respawnPosition;
+        playerRigidbody.rotation = respawnRotation;
+
+        Physics.SyncTransforms();
     }
 
     /// <summary>

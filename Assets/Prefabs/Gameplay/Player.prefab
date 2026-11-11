@@ -173,7 +173,7 @@ MonoBehaviour:
   mountClearance: 0.05
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
-  wallClingBoost: 20
+  wallClingBoost: 25
   wallSlideSpeed: 3
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
