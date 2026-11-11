@@ -64,6 +64,18 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -6571359545015116988, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: -4370100477440051494, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: -2672720601122306462, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: -662446560748564265, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -71,6 +83,14 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
       propertyPath: m_Name
       value: Balcony
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 1019492725297965639, guid: 10ca611563837f040bc114443f7c87e0, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
