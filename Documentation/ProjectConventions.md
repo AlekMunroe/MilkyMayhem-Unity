@@ -143,8 +143,6 @@ Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`
 
 The old CharacterController player and the empty `EventHandler` and the replaced `CheckpointArrow` are currently stored in `_Depreciated` folders. They are not part of the current game.
 
-Sprinting is depreicated and its functionality has been removed from the `PlayerController`.
-
 ## Naming
 
 - Classes and filenames use `PascalCase`, for example `PlayerController.cs`.
@@ -189,6 +187,10 @@ The collider must inherit the same scale as the mesh. If the mesh is scaled thro
 
 Small objects used for mounting must use the `Environment` layer as normal.
 
+Objects in the environment which will never move should be marked as static. This includes objects such as buildings, roads, pavements and menches. After changing the layout of the environment, make sure to bake the occlusion and test it with the occlusion culling visualisation.
+
+Dont set moving objects such as the player and milk crates to static.
+
 ## Scenes and Prefabs
 
 - Avoid having two people edit the same `.unity` scene at the same time.
@@ -197,6 +199,17 @@ Small objects used for mounting must use the `Environment` layer as normal.
 - Keep unfinished and experimental objects inside test scenes.
 - Do not rename layers, tags or serialized script fields without telling the group because this can break saved references.
 - Check that the correct controllers and managers are enabled before testing a scene.
+
+## Audio
+
+Short sound effects can be used normally with Decompress on Load or Compressed in Memory depending on their size and their use.
+
+Long background music should be set as:
+- Load in background: Enabled
+- Load type: Streaming
+- Compression format: Vorbis
+
+These settings will stop longer audio files from causing freezes when they are loaded into the game.
 
 ## Git Workflow
 

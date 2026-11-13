@@ -146,7 +146,7 @@ Required setup:
 4. Confirm spawned crates have `Rigidbody`, `Collider` and `MilkCrate` components.
 5. Use left mouse to throw and right mouse to place.
 
-`MilkThrowing` ignores collisions with other spawned crates and the player. It also blocks input while paused, when the player is inside the milk store, while the cursor is unlocked or while UI is being used.
+`MilkThrowing` ignores collisions with other spawned crates and the player. Crates which are thrown inherit some of the players current velocity before the throwing velocity is added. It also blocks input while paused, when the player is inside the milk store, while the cursor is unlocked or while UI is being used.
 
 ## Player UI Setup
 
@@ -170,8 +170,15 @@ The gameplay scene should contain one enabled `Controllers` object with:
 
 Assign the pause menu object to the `WorldController`. Assign the parent with the all the `MilkCheckpoint` object and the `RoundCompleteUI` to `GameManager.
 
-`GameManager` waits for the `MilkStoreExitTrigger` to call `StartRound` then creates a random checkpoint route. It then starts the timer and tracks the checkpoints, score and bottles broken. It completes the round when all checkpoints are completed or the timer reaches zero.
+`GameManager` waits for the `MilkStoreExitTrigger` to call `StartRound` then instantiates one of the checkpoint route prefabs available. It then starts the timer and tracks the checkpoints, score and bottles broken. It completes the round when all checkpoints are completed or the timer reaches zero.
 
+## Player respawn setup
+1. Add a `PlayerRespawnTrigger` under the map with a collider.
+1. Assign the fallback spawn point gameobject in a safe location.
+1. Set the respawn height offset.
+1. Keep the trigger big enough to catch the player far enough outside the world bouncs.
+
+`PlayerRespawnTrigger` saves the players last safe position on the ground. When the player falls into the out of bounds trigger, it calls `PlayerController.RespawnAt` to reset the players states and moves the player to the location. If no safe location is set, the fallback spawn point is used.
 ## Setup Verification
 
 Before committing player or scene changes, verify:
@@ -215,3 +222,9 @@ Before committing player or scene changes, verify:
 - Small objects are not treated as walls
 - Losing health reduces the players movement speed
 - Escape and losing focus doesnt open the pause menu after the round completes.
+- Falling out of bounds moves the player to their last safe location.
+- Respawning resets the players movement and current state.
+- Thrown milk inherits some of the players velocity,
+- Milk crates break on the bounce after the maximum bounce count.
+- Hard impacts break the milk crates.
+- Impacting with a checkpoint does not break milk crates.

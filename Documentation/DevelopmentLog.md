@@ -681,6 +681,75 @@ To improve the movement through the new environment, update the rest of the coll
 - Test the car collision and knockback force
 - Add the new LOD models when they are available
 
+## 10 November 2026
+
+### Aim
+Update the checkpoint routes for the new environment and replace the old out of bounds trigger.
+
+### Work completed
+- Depreciated the `RestartTrigger` and removed the countdown text.
+- Created a `PlayerRespawnTrigger` to detect the players last safe location and move them back if they fall out of bounds.
+- Created five checkpoint route prefabs.
+
+### Testing
+- The last safe location works
+- The fallback spawnpoint works when no safe location is saved.
+- Every checkpoint route is completable
+- The wall cling vertical boost works best at around 25-40 but needs more testing.
+
+### Problems
+- Wall movement needs more testing.
+- Normal sliding seems to build up over time without resetting.
+- MIlk crates feel inconsistant when moving with the player.
+- The final amount of time for rounds have not been decided yet.
+
+### Next steps
+- Test the final checkpoint routes.
+- Decide if the timer should change based on the current route.
+- Restore and test the broken milk crates with others.
+- Continue testing the wall movement and sliding systems
+
+## 11 November 2026
+
+### Aim
+Improve the milk store, milk crate physics and optimise the game
+
+### Work completed
+- Tested the checkpoint search area of 30, 40 and 50. Found that 50 works best for balancing guiding the player and allowing them to explore.
+- Created a greybox interior for the milk store
+- Updated `MilkCrate` and `MilkCheckpoint` to restore broken crates. Crates will not break if they bounce past the maximum bounces.
+- Updated the milk crate AudioSource to use 3D audio.
+- Updated `MilkThrowing` so crates inherit some of the players velocity.
+- Used the Unity profiler to find out why the game freezes when leaving the milk store.
+- Found the issue is relating to the background music being loaded at the start of the round. This was fixed by updating long audio clips to load int he background using Streaming.
+- Marked world objects as static.
+- Baked occlusion culling for the environment.
+- Created `Dev_FPSCounter` to show the current FPS during development.
+- Imported Alek's node based vehicle movemenbt system.
+- Created two cars with routes.
+- Built and uploaded `v0.1.5`.
+
+### Testing
+- Checkpoint sizes of 30 felt like it guided the player directly to the checkpoint, 40 felt better but still gave the player too much guidance. 50 felt like it works best.
+- Milk crates can break from hard impacts or if they bounce past their maximum bounce count.
+- Thrown crates now inherit the players movement correctly.
+- The Unity profiler shown audio loading takes too long and needed improvement.
+- Occlusion culling helps cut down performance issues.
+- The FPS counter works as expected.
+- Both vehicles works as expected.
+
+### Problems
+- The checkpoint visuals and sounds are temporary
+- The milk crate models are not yet final.
+- Vehicle knockback has not yet been updated.
+- The city needs LOD models for optimisation.
+
+### Next steps
+- Continue testing and updating the milk crate physics
+- Test and update the vehicle routes, movement and car knockback
+- Replace the old checkpoint visuals with the final assets when they are available.
+- Add LOD models when they are available.
+
 ## Entry Template
 
 ### Date and Feature

@@ -55,10 +55,11 @@ The player can automatically mount smaller objects below the `maxMountHeight`.
 
 **Next action:** Check required references during startup, disable the component when they are missing and log an error.
 
-### Throw physics require balancing
+### Throw physics
 
-**Status:** Balancing required
+**Status:** Testing required
 
+Crates now inherit the players velocity.
 Throw strength, inherited player velocity, angular torque, bounce force, bounce count, safe landing speed and placement distance are prototype values. Current values work for testing but checks for the final world.
 
 ## Checkpoints, Scoring and Round Completion
@@ -73,7 +74,7 @@ The current designs are temporary and will be replaced when the final UI designs
 
 ### Checkpoint feedback is provisional
 
-**Status:** Accepted for vertical slice
+**Status:** Requires final versions.
 
 Crates entering checkpoints now comlete deliveries without checking the impact speed. The old high speed function has now been removed. Successful feedback still work but failed fields exist with no way to fail.
 
@@ -94,6 +95,8 @@ Crates entering checkpoints now comlete deliveries without checking the impact s
 **Status:** Testing required
 
 `CarDamage` nor uses the cars forward direction and dot product threshold to detect the player from the front. The current knockback force is still too powerful.
+
+A vehicle movement system not exists and knockback now needs testing along with this.
 
 **Next action:** Add the cars movement system then test damage and knockback at different speeds and angles.
 
@@ -137,18 +140,11 @@ Head bobbing is visual but movement seems different near some wall edges.
 
 ## Scenes and Builds
 
-- `MainGame` is the current playable vertical slice but only uses the grey box environment and temporary assets.
+- `MainGame` is the current playable vertical slice.
 - `DevMenu` and `MovementTest` remain development scenes and must be replaced from the final build.
 - The `Assets` folder still require organisation.
 - The final playable scenes, environment testing, hazards and production models are not complete.
 - No automated gameplay tests currently exist.
-
-### RestartTrigger is a prototype
-**Status:** Testing required
-
-`RestartTrigger` restarts the current scene after a countdown when the player is out of bounds by triggering the collider. It assumes the references are assigned and doesnt prevent multiple countdowns from starting.
-
-**Next action:** Add missing reference and repeated trigger protection.
 
 ### TutorialScene is missing GameManager
 
@@ -157,14 +153,6 @@ Head bobbing is visual but movement seems different near some wall edges.
 `CameraController` expects a `GameManager` to subscribe to `RoundCompleted`. The TutorialScene doesnt have one and gives an error.
 
 **Next action:** Add the game state setup or stop the tutorial camera from requiring the event.
-
-### Performance drop when leaving the milk store
-
-**Status:** Investigate
-
-A performance drop is clearly noticable when the player leaves the milk store. It is suspected that this is due to the round starting.
-
-**Next action:** Look at the route instanting, checkpoint creation, music switching or the UI enabling when the round starts.
 
 ### Performance drops when viewing the environment from a distance
 

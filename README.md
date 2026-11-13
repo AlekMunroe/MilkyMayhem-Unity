@@ -2,9 +2,9 @@
 
 Milky Mayhem is a first-person parkour delivery game. The player controls a milkman who must move quickly through the environment, deliver milk and avoid hazards while trying to achieve a high score.
 
-The project is in the vertical slice development stage. The player uses a Rigidbody based `PlayerController`. The player has ground movement, jumping, airborne movement, wall movement, sliding and automatic mounting on small objects. Sprinting is now removed. The current development build is `v0.1.4`
+The project is in the vertical slice development stage. The player uses a Rigidbody based `PlayerController`. The player has ground movement, jumping, airborne movement, wall movement, sliding and automatic mounting on small objects. Sprinting is now removed. The current development build is `v0.1.5`
 
-A complete prototype of the delivery loop is now implemented. The player starts inside the milk store and the round begins when the player leaves. The player can throw milk with the left mouse button or place milk with the right mouse button. Milk crates bounce and are removed after their lifetime expires. Delivered crates do not expire. A testest checkpoint route is randomly chosen when the round starts. Deliveries add score and the round finishes when every delivery is completed or the timer ends.
+A complete prototype of the delivery loop is now implemented. The player starts inside the milk store and the round begins when the player leaves. The player can throw milk with the left mouse button or place milk with the right mouse button. Milk crates bounce and are removed after their lifetime expires. Delivered crates do not expire. A testest checkpoint route is randomly chosen when the round starts. Deliveries add score and the round finishes when every delivery is completed or the timer ends. When a crate it thrown, it inherits some of the players momentum. Crates can break from a hard impact or if it reaches its maximum number of bounces.
 
 The project includes a main menu, options menu, saved scores, gameplay UI, a pause menu and round completion screen. The gameplay UI has a compass which points to a general delivery area and spins when the player is inside the checkpoint search area.
 
@@ -55,10 +55,9 @@ Sprinting is now removed from the `PlayerController`.
 
 1. Add custom key binds and add them to the settings menu
 1. Create the player ability system
-1. Fix the performance issues
-1. Decide if the round time should change depending on the chosen route
 1. Continue replacing temporary assets
-1. Create final placements on checkpoint routes
 1. Improve and test the wall running movement
-1. Restore the broken milk system
-1. Add LOD models
+1. Decide if the round time should change based on the amount of checkpoints
+1. Test and update the milk crate throwing, bouncing and breaking
+1. Add LOD models when they are available
+1. Continue optimisation ont he world

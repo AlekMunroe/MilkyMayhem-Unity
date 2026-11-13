@@ -156,7 +156,7 @@ The component is under `Main Camera` on the player's `ThrowOrigin` object.
 
 - Left mouse throws a crate.
 - Right mouse places a crate.
-- A thrown crate can inherit some of the player's Rigidbody velocity.
+- A thrown crate inherits some of the player's Rigidbody velocity before the forward throw velocity is added.
 - Thrown crates use an impulse and random torque.
 - Placed crates have their controlled bouncing disabled.
 - New crates ignore collisions with the player and other spawned crates.
@@ -181,6 +181,9 @@ It currently includes:
 - A function which disables bouncing for placed crates
 - A function which allows a checkpoint to stop and position the crate
 - A seperate idle lifetime
+- Breaking ont he bounce after the maximum bounce count.
+- Checkpoints do not break crates
+- 3D throwing and breaking audio
 
 `MilkCrate` is the only owner of the projectile lifetime.   MilkThrowing` doesnt schedule crates to be destroyed.
 
@@ -329,15 +332,15 @@ The compass UI hides while the player is inside the milk store. During gameplay,
 
 The trigger uses the reference for outside to check if the player leaves the milk store in the correct direction. It then closes the milk store door and sets the player's controls correctly. it then calls `GameManager.StartRound`.
 
-## RestartTrigger
+## PlayerRespawnTrigger
 
-**Path:** `Assets/Scripts/World/RestartTrigger.cs`
+**Path:** `Assets/Scripts/World/PlayerRespawnTrigger.cs`
 
-**Responsibility:** Restarting the current scene when the player enters the trigger.
+**Responsibility:** MOves the player to their last safe location when they fall out of bouncs.
 
-It shows a five second countdown using TMP text and reloads the current scene. The countdown uses unscaled time so it can continue to work if the normal game has stopped.
+The script continuously checks the players position and rotation when `PlayerController.IsGrounded` is true. When the player enters the trigger, it calls `PlayerController.RespawnAt` which resets the players movement and states then moves the player to their last safe location.
 
-This is currently a prototype safety system.
+If no safe location is set, the player is moved to a fallback spawn point.
 
 ## RoundCompleteMenu
 
@@ -379,6 +382,13 @@ This needs further testing becuase the knockback force is too powerful. The fina
 
 Cut health starts regenerating immediately after the player leaves the trigger.
 
+## VehicleRoute + VehicleMovement
+
+**Path:** `Assets/Scripts/World/VehicleMovement/VehicleRoute.cs`
+**Path:** `Assets/Scripts/World/VehicleMovement/VehicleMovement.cs`
+
+**Notes:** All documentation can be found on [GitHub](https://github.com/AlekMunroe/Node-Based-Vehicle-Movement-System/blob/main/README.md).
+
 ## Development Tools
 
 ### Development Main Menu
@@ -395,6 +405,12 @@ This is the temporary menu used to open development scenes. It is not the final 
 
 This shows keyboard and mouse button inputs while testing or recording development footage. It is only a development tool and should not be part of the final UI.
 
+### FPSCounter
+
+**Path:** `Assets/Scripts/_Dev/Dev_FPSCounter.cs`
+
+This script shows the current FPS using a TMP test. It updates at a customisable interval and uses unscaled time so it can update no matter the timescale.
+
 ## Depreciated Systems
 
 These files are kept for reference but are not part of the current systems:
@@ -405,6 +421,16 @@ These files are kept for reference but are not part of the current systems:
 - `Assets/Scripts/Player/_Depreciated/CheckpointArrow.cs`: the replaced 3D checkpoint arrow
 
 Do not use these files in new scripts or scenes. They should remain until the group confirms they are no longer needed by another branch or scene.
+
+### RestartTrigger
+
+**Path:** `Assets/Scripts/World/_Depreciated/RestartTrigger.cs`
+
+**Responsibility:** Restarting the current scene when the player enters the trigger.
+
+It shows a five second countdown using TMP text and reloads the current scene. The countdown uses unscaled time so it can continue to work if the normal game has stopped.
+
+This is now depreciated
 
 ## Adding a Gameplay System
 
