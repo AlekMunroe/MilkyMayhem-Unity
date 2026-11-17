@@ -14,7 +14,6 @@ public class PlayerController : MonoBehaviour
 
     [Header("<color=red>Perminant blocks - READ COMMENT</color>")]
     [Header("<color=grey>These are only to be used perminantly, do not reference these anywhere else</color>")]
-    [SerializeField] private bool perm_canSprint;
     [SerializeField] private bool perm_canJump;
     [SerializeField] private bool perm_canParkourJump;
     [SerializeField] private bool perm_canGroundMove;
@@ -33,19 +32,13 @@ public class PlayerController : MonoBehaviour
     //Movement inputs are now stored here. There is no need to assign a local moveDirection variable in each movement function, as it is covered by vector3MovementInput.
     private Vector2 directMovementInput;
     private Vector3 vector3MovementInput;
-    private float currentMovementSpeed;
+    private float currentMovementSpeed;    
 
-    
-    [Header("Sprinting")]
-    [SerializeField] private float sprintSpeed = 10f;
-    [SerializeField] private float maxSprintStamina = 2f;
-    [SerializeField] private float sprintDrainSpeed = 1f;
-    [SerializeField] private float sprintRegenerationSpeed = 0.75f;
-    [SerializeField] private float sprintRegenerationDelay = 1f; 
+    [Header("Milk store movement")]
+    [SerializeField, Min(0f)] private float milkStoreMovementSpeed = 7f;
 
-    private float currentSprintStamina;
-    private float sprintRegenTimer;
-    
+    private bool isInMilkStore;
+    public bool IsInMilkStore => isInMilkStore;
 
     [Header("Parkour Jump")]
     [SerializeField] private float jumpHeight = 7f;
@@ -69,12 +62,17 @@ public class PlayerController : MonoBehaviour
 
     private bool jumpReleased;
 
+    [Header("Mounting")]
+    [SerializeField] private float maxMountHeight = 1.8f;
+    [SerializeField] private float mountCheckDistance = 0.25f;
+    [SerializeField] private float mountForwardDistance = 0.2f;
+    [SerializeField] private float mountClearance = 0.05f;
+
     [Header("Wall Movement")]
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallClingBoost = 20f;
     [SerializeField] private float wallSlideSpeed = 10f;
-    [SerializeField] private float additionalWallSlideSpeed = 2f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
     [SerializeField] private float wallMomentumHalfLife = 0.25f;
@@ -82,7 +80,6 @@ public class PlayerController : MonoBehaviour
     private bool isWallClinging;
     private float wallClingTimer;
     private float wallReattachTimer;
-    public bool isFastSlide;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
@@ -116,14 +113,6 @@ public class PlayerController : MonoBehaviour
     [Tooltip("This value controls how much damage affects the player's speed.")]
     [SerializeField] private float damageMultiplier = 1f;
     [SerializeField] private float healthRegenDelay = 2.5f;
-<<<<<<< Updated upstream
-    [Tooltip("Amount of health regen per tick")]
-    [SerializeField] private float healthRegenAmount = 1f;
-    private float maxHealth = 100f;
-    public float damageTaken;
-    public float damageCut; 
-    private float healthRegenDelayTimer;
-=======
     [Tooltip("Amount of health regen")]
     [SerializeField] private float healthRegenAmount = 2f;
     [Tooltip("PlayerHealth should always be set to 100. This value will affect how much health impacts the player speed")]
@@ -132,10 +121,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float damageCut;
 
     public float healthRegenDelayTimer;
-    private float healthSpeedMultiplier = 1f;
 
     public float CurrentHealth => Mathf.Clamp(maxHealth - damageCut - (damageTaken * damageMultiplier), 0f, maxHealth);
->>>>>>> Stashed changes
 
     [Header("Animations")]
     //Sliding
@@ -146,34 +133,10 @@ public class PlayerController : MonoBehaviour
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private bool freezePlayer;
     private Vector3 normalCameraLocalPosition;
-
-
-
-
-
-    /// <summary>
-    /// Gets the remaining sprint stamina as a value between 1 and 0.
-    /// </summary>
-    public float SprintStaminaPercent
-    {
-        get
-        {
-            if (maxSprintStamina <= 0f)
-            {
-                return 0f;
-            }
-
-            return currentSprintStamina / maxSprintStamina;
-        }
-    }
 
     private void Awake()
     {
@@ -194,7 +157,6 @@ public class PlayerController : MonoBehaviour
         playerRigidbody.useGravity = false;
 
         currentMovementSpeed = maxSpeed;
-        currentSprintStamina = maxSprintStamina;
 
         normalControllerHeight = capsuleCollider.height;
         normalControllerCenter = capsuleCollider.center;
@@ -229,7 +191,6 @@ public class PlayerController : MonoBehaviour
         ReadMovementInput(keyboard);
         UpdateSliding(keyboard);
         UpdateJumpTimers(keyboard);
-        UpdateSprint(keyboard);
 
         if (keyboard.spaceKey.wasReleasedThisFrame)
         {
@@ -245,7 +206,9 @@ public class PlayerController : MonoBehaviour
         }
 
         UpdateGroundCheck();
+        TryMountingObject();
         UpdateWallState();
+
         HandleJumping();
         UpdateGravity();
         UpdateHealth();
@@ -294,8 +257,6 @@ public class PlayerController : MonoBehaviour
         isGrounded = surfaceAngle <= maxGroundAngle;
     }
 
-<<<<<<< Updated upstream
-=======
     private void TryMountingObject()
     {
         if(!isGrounded || vector3MovementInput.sqrMagnitude < 0.01f)
@@ -360,7 +321,6 @@ public class PlayerController : MonoBehaviour
         playerRigidbody.linearVelocity = currentVelocity;
     }
 
->>>>>>> Stashed changes
     /// <summary>
     /// Apply a custom gravity to the Rigidbody
     /// </summary>
@@ -390,10 +350,6 @@ public class PlayerController : MonoBehaviour
                 if (finalWallSlideSpeed > wallSlideSpeed)
                 {
                     finalWallSlideSpeed = wallSlideSpeed;
-                }
-                if (isFastSlide)
-                {
-                    finalWallSlideSpeed *= additionalWallSlideSpeed;
                 }
                 currentVelocity.y = -finalWallSlideSpeed;
                 canWallClimb = false;
@@ -490,7 +446,12 @@ public class PlayerController : MonoBehaviour
 
         playerRigidbody.linearVelocity = new Vector3(newHorizontalVelocity.x, currentVelocity.y, newHorizontalVelocity.z);
     }
+    public void SetMilkStoreMovement(bool enabled)
+    {
+        isInMilkStore = enabled;
 
+        currentMovementSpeed = enabled ? milkStoreMovementSpeed : maxSpeed;
+    }
     /// <summary>
     /// Reads WASD inputs and handles movement while the player is on a wall.
     /// </summary>
@@ -511,10 +472,8 @@ public class PlayerController : MonoBehaviour
         Vector3 velocityAlongWall = Vector3.ProjectOnPlane(currentHorizontalVelocity, horizontalWallNormal);
 
         float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
-<<<<<<< Updated upstream
         
         velocityAlongWall *= momentumMultiplier;
-=======
 
         if (vector3MovementInput.sqrMagnitude > 0.01f)
         {
@@ -524,7 +483,6 @@ public class PlayerController : MonoBehaviour
         {
             velocityAlongWall *= momentumMultiplier;
         }
->>>>>>> Stashed changes
 
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
@@ -548,13 +506,8 @@ public class PlayerController : MonoBehaviour
         //Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
         Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, vector3MovementInput);
 
-<<<<<<< Updated upstream
-        bool isVectorAway = Vector3.Dot(moveDirection, projectVelocity) < 0f;
-        if(projectVelocity.magnitude < airStrafeSpeed || isVectorAway)
-=======
         bool isVectorAway = Vector3.Dot(vector3MovementInput, projectVelocity) < 0f;
         if (projectVelocity.magnitude < airStrafeSpeed || isVectorAway)
->>>>>>> Stashed changes
         {
             Vector3 idealVelocity = vector3MovementInput * currentMovementSpeed;
             if (!isVectorAway)
@@ -600,6 +553,84 @@ public class PlayerController : MonoBehaviour
         wallReattachTimer -= Time.deltaTime;
     }
 
+/// <summary>
+    /// Handles updating Health related mechanics.
+    /// Use healthToSpeedMultiplier to change speed based on health.
+    /// </summary>
+    private void UpdateHealth()
+    {
+        if (!perm_healthEffects)
+        {
+            return;
+        }
+
+        float currentHealth = maxHealth - damageCut - damageTaken * damageMultiplier;
+        if (currentHealth < 0f)
+        {
+            currentHealth = 0.1f;
+        }
+        float speedModifier = Mathf.Clamp(currentHealth / maxHealth, 0f, 1f);
+        currentMovementSpeed = maxSpeed * speedModifier;
+
+        if (healthRegenDelayTimer > 0)
+        {
+            healthRegenDelayTimer -= Time.deltaTime;
+        }
+        else if (currentHealth < maxHealth && damageTaken > 0f)
+        {
+            ModifyHealth(-healthRegenAmount * Time.deltaTime);
+        }
+        else if (currentHealth < maxHealth && damageCut > 0f)
+        {
+            CutHealthRegen(healthRegenAmount * Time.deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Handles changing the health value. Currently public for testing purposes, should be switched to Event Systems for better control.
+    /// </summary>
+    /// <param name="damageValue"> Positive for damage, negative for healing.</param>
+    public void ModifyHealth(float damageValue)
+    {
+        damageTaken += damageValue;
+        if (damageValue > 0)
+        {
+            healthRegenDelayTimer = healthRegenDelay;
+        }
+        if (damageTaken < 0f)
+        {
+            damageTaken = 0f;
+        }
+    }
+    /// <summary>
+    /// Handles cutting the health value. This should only be used for damage that is not meant to be applied multiple times.
+    /// Cut damage is damage that effective caps the player's health to a value below the base max health.
+    /// </summary>
+    /// <param name="damageValue"></param> Should always be positive, as this is meant to be a reduction of the effective max health.
+    public void CutHealth(float damageValue)
+    {
+        damageCut = damageValue;
+    }
+    /// <summary>
+    /// Exclusively to regenerate the cut health when the player is not affected by it.
+    /// </summary>
+    /// <param name="regenValue"></param> The amount of health the player regenerates per tick.
+    private void CutHealthRegen(float regenValue)
+    {
+        damageCut -= regenValue;
+        if (damageCut < 0f)
+        {
+            damageCut = 0f;
+        }
+    }
+
+    public void ResetHealth()
+    {
+        damageTaken = 0f;
+        damageCut = 0f;
+        healthRegenDelayTimer = 0f;
+    }
+
     /// <summary>
     /// handles all jumps
     /// </summary>
@@ -607,7 +638,7 @@ public class PlayerController : MonoBehaviour
     {
         Keyboard keyboard = Keyboard.current;
 
-        if (!perm_canJump)
+        if (!perm_canJump || isInMilkStore)
         {
             return;
         }
@@ -644,7 +675,7 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void PerformParkourJump()
     {
-        if (!perm_canParkourJump)
+        if (!perm_canParkourJump || isInMilkStore)
         {
             return;
         }
@@ -698,46 +729,6 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Drain stamina while sprinting and regenerate it when not sprinting
-    /// </summary>
-    /// <param name="keyboard"></param>
-    private void UpdateSprint(Keyboard keyboard)
-    {
-        if (!perm_canSprint)
-        {
-            return;
-        }
-
-        bool shiftHeld = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
-        bool movementHeld = movementInput.sqrMagnitude > 0.01f;
-        bool canSprint = currentSprintStamina > 0f;
-        bool isSprinting = shiftHeld && movementHeld && canSprint;
-
-        if (isSprinting)
-        {
-            currentMovementSpeed = sprintSpeed;
-
-            currentSprintStamina -= sprintDrainSpeed * Time.deltaTime;
-            currentSprintStamina = Mathf.Max(currentSprintStamina, 0f);
-
-            sprintRegenTimer = sprintRegenerationDelay;
-        }
-
-        else
-        {
-            currentMovementSpeed = maxSpeed;
-            sprintRegenTimer -= Time.deltaTime;
-
-            if (sprintRegenTimer <= 0f)
-            {
-                currentSprintStamina += sprintRegenerationSpeed * Time.deltaTime;
-
-                currentSprintStamina = Mathf.Min(currentSprintStamina, maxSprintStamina);
-            }
-        }
-    }
-
-    /// <summary>
     /// Check if the player in the air is touching a wall
     /// </summary>
     private void UpdateWallState()
@@ -752,11 +743,7 @@ public class PlayerController : MonoBehaviour
         {
             storedWallNormal = Vector3.zero;
         }
-<<<<<<< Updated upstream
-        
-=======
 
->>>>>>> Stashed changes
         if (isGrounded)
         {
             isWallClinging = false;
@@ -882,7 +869,13 @@ public class PlayerController : MonoBehaviour
         {
             return false;
         }
+        float objectHeight = wallHit.collider.bounds.max.y - capsuleCollider.bounds.min.y;
 
+        // Mount small objects, do not treat them as walls
+        if(objectHeight > 0f && objectHeight <= maxMountHeight)
+        {
+            return false;
+        }
         float surfaceAngle = Vector3.Angle(wallHit.normal, Vector3.up);
 
         return surfaceAngle >= minWallAngle && surfaceAngle <= maxWallAngle;
@@ -919,7 +912,7 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void UpdateSliding(Keyboard keyboard)
     {
-        if (!perm_canSlide)
+        if (!perm_canSlide || isInMilkStore)
         {
             return;
         }
@@ -1034,12 +1027,9 @@ public class PlayerController : MonoBehaviour
 
         Vector3 direction = playerRigidbody.linearVelocity;
 
-<<<<<<< Updated upstream
-        float conversionRatio = Mathf.Abs(maxFallingVelocity * momentumConversionRatio.x/momentumConversionRatio.y);
-        Debug.Log(conversionRatio);
-=======
+
         float conversionRatio = Mathf.Abs(maxFallingVelocity * momentumConversionRatio.x / momentumConversionRatio.y);
->>>>>>> Stashed changes
+
         if (conversionRatio < 1)
         {
             conversionRatio = 1;
@@ -1099,79 +1089,6 @@ public class PlayerController : MonoBehaviour
     public CameraController GetCameraController()
     {
         return GetComponent<CameraController>();
-    }
-
-    /// <summary>
-    /// Handles updating Health related mechanics. 
-    /// Use healthToSpeedMultiplier to change speed based on health.
-    /// </summary>
-    private void UpdateHealth()
-    {
-        if (!perm_healthEffects)
-        {
-            return;
-        }
-
-        float currentHealth = maxHealth - damageCut - damageTaken * damageMultiplier;
-        if (currentHealth < 0f)
-        {
-            currentHealth = 0.1f;
-        }
-        float speedModifier = Mathf.Clamp(currentHealth / maxHealth, 0f, 1f);
-        currentMovementSpeed = maxSpeed * speedModifier;
-
-        if (healthRegenDelayTimer > 0)
-        {
-            healthRegenDelayTimer -= Time.deltaTime;
-        }
-        else if (currentHealth < maxHealth && damageTaken > 0f)
-        {
-            ModifyHealth(-healthRegenAmount);
-        }
-        else if (currentHealth < maxHealth && damageCut > 0f)
-        {
-            CutHealthRegen(healthRegenAmount);
-        }
-    }
-
-    /// <summary>
-    /// Handles changing the health value. Currently public for testing purposes, should be switched to Event Systems for better control. 
-    /// </summary>
-    /// <param name="damageValue"> Positive for damage, negative for healing.</param>
-    public void ModifyHealth(float damageValue)
-    {
-        damageTaken += damageValue;
-        if (damageValue > 0)
-        {
-            healthRegenDelayTimer = healthRegenDelay;
-        }
-        if (damageTaken < 0f)
-        {
-            damageTaken = 0f;
-        }
-    }
-
-    /// <summary>
-    /// Handles cutting the health value. This should only be used for damage that is not meant to be applied multiple times.
-    /// Cut damage is damage that effective caps the player's health to a value below the base max health.
-    /// </summary>
-    /// <param name="damageValue"></param> Should always be positive, as this is meant to be a reduction of the effective max health.
-    public void CutHealth(float damageValue)
-    {
-        damageCut = damageValue;
-    }
-
-    /// <summary>
-    /// Exclusively to regenerate the cut health when the player is not affected by it.
-    /// </summary>
-    /// <param name="regenValue"></param> The amount of health the player regenerates per tick.
-    private void CutHealthRegen(float regenValue)
-    {
-        damageCut -= regenValue;
-        if (damageCut < 0f)
-        {
-            damageCut = 0f;
-        }
     }
 
     private void OnDestroy()

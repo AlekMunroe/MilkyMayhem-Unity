@@ -6,21 +6,12 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Checkpoint")]
+    [Header("Container")]
     [SerializeField] private GameObject checkpointContainer;
-<<<<<<< Updated upstream
-=======
     [SerializeField] private CheckpointRoute[] checkpointRoutePrefabs;
-
-    //Temporary variables for traffic point generation. Most likely will make a new script to handle traffic point generation in the future
-    [Header("Traffic")]
-    [SerializeField] private GameObject trafficPointContainer;
-    [SerializeField] private GameObject[] trafficPointPrefabs;
-
     private CheckpointRoute activeCheckpointRoute;
 
     public int RouteNumber { get; private set; }
->>>>>>> Stashed changes
 
     private readonly List<MilkCheckpoint> checkpointList = new List<MilkCheckpoint>();
     private readonly HashSet<MilkCheckpoint> clearedCheckpoints = new HashSet<MilkCheckpoint>();
@@ -35,11 +26,24 @@ public class GameManager : MonoBehaviour
     public event Action<int, int> CheckpointProgressChanged;
     public event Action RoundCompleted;
 
+    public bool IsRoundRunning => isRoundRunning;
+    public bool HasRoundEnded { get; private set; }
+    public event Action RoundStarted;
+
     [Header("Round Timer")]
     [SerializeField] private float roundDuration = 120f;
+    [SerializeField, Min(0f)] private float lowTimeWarningThreshold = 30f;
     private bool isRoundRunning;
     public float TimeRemaining { get; private set; }
+
+    private bool lowTimeWarningTriggered;
+    public float LowTimeWarningThreshold => lowTimeWarningThreshold;
+
     public event Action<float> TimeRemainingChanged;
+    public event Action LowTimeWarningStarted;
+    public event Action<int> FinalCountdownSecond;
+
+    private int lastCountdownSecond = -1;
 
     [Header("Round Completion")]
     [SerializeField] private GameObject RoundCompleteUI;
@@ -73,8 +77,11 @@ public class GameManager : MonoBehaviour
 
         RoundCompleteUI.SetActive(false);
 
-        FindCheckpoints();
-        StartRoundTimer();
+        TimeRemaining = roundDuration;
+        isRoundRunning = false;
+        TimeRemainingChanged?.Invoke(TimeRemaining);
+
+        HasRoundEnded = false;
     }
 
     void Update()
@@ -90,14 +97,14 @@ public class GameManager : MonoBehaviour
         checkpointList.Clear();
         clearedCheckpoints.Clear();
 
-        if(checkpointContainer == null)
+        if(activeCheckpointRoute == null)
         {
-            Debug.LogError("GameManager: Checkpoint Container is not assigned");
+            Debug.LogError("GameManager: No checkpoint route found");
 
             return;
         }
 
-        MilkCheckpoint[] checkpoints = checkpointContainer.GetComponentsInChildren<MilkCheckpoint>(true);
+        MilkCheckpoint[] checkpoints = activeCheckpointRoute.GetComponentsInChildren<MilkCheckpoint>(true);
 
         checkpointList.AddRange(checkpoints);
 
@@ -107,6 +114,43 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("GameManager: No MilkCheckpoints were found");
         }
+    }
+
+    private bool CreateRandomCheckpointRoute()
+    {
+        if(checkpointContainer == null)
+        {
+            Debug.LogError("GameManager: Checkpoint container is missing");
+
+            return false;
+        }
+
+        if(checkpointRoutePrefabs == null || checkpointRoutePrefabs.Length == 0)
+        {
+            Debug.LogError("GameManager: No checkpoint route prefabs assigned");
+
+            return false;
+        }
+
+        int routeIndex = UnityEngine.Random.Range(0, checkpointRoutePrefabs.Length);
+
+        CheckpointRoute selectedRoute = checkpointRoutePrefabs[routeIndex];
+
+        if(selectedRoute == null)
+        {
+            Debug.LogError("GameManager: The selected checkpoint route is null");
+
+            return false;
+        }
+
+        activeCheckpointRoute = Instantiate(selectedRoute, checkpointContainer.transform);
+
+        activeCheckpointRoute.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        activeCheckpointRoute.transform.localScale = Vector3.one;
+
+        RouteNumber = activeCheckpointRoute.RouteNumber;
+
+        return true;
     }
 
     public bool RegisterCheckpointCleared(MilkCheckpoint checkpoint, int scoreAmount)
@@ -139,6 +183,7 @@ public class GameManager : MonoBehaviour
     private void CompleteRound()
     {
         isRoundRunning = false;
+        HasRoundEnded = true;
 
         RoundCompleted?.Invoke();
 
@@ -157,11 +202,32 @@ public class GameManager : MonoBehaviour
     /// Starts the round timer when called.
     /// A future update may be to call this from elsewhere to include controlled starting
     /// </summary>
-    private void StartRoundTimer()
+    public void StartRound()
     {
+        if (isRoundRunning)
+        {
+            return;
+        }
+
+        if (!CreateRandomCheckpointRoute())
+        {
+            return;
+        }
+
+        FindCheckpoints();
+
+        if(TotalCheckpoints == 0)
+        {
+            return;
+        }
+
         TimeRemaining = roundDuration;
+        lowTimeWarningTriggered = false;
+        lastCountdownSecond = -1;
+        HasRoundEnded = false;
         isRoundRunning = true;
 
+        RoundStarted?.Invoke();
         TimeRemainingChanged?.Invoke(TimeRemaining);
     }
 
@@ -177,6 +243,20 @@ public class GameManager : MonoBehaviour
 
         TimeRemaining -= Time.deltaTime;
         TimeRemaining = Mathf.Max(TimeRemaining, 0f);
+
+        if(!lowTimeWarningTriggered && TimeRemaining <= lowTimeWarningThreshold)
+        {
+            lowTimeWarningTriggered = true;
+            LowTimeWarningStarted?.Invoke();
+        }
+
+        int displayedSecond = Mathf.CeilToInt(TimeRemaining);
+
+        if(displayedSecond > 0 && displayedSecond <= 5 && displayedSecond != lastCountdownSecond)
+        {
+            lastCountdownSecond = displayedSecond;
+            FinalCountdownSecond?.Invoke(displayedSecond);
+        }
 
         TimeRemainingChanged?.Invoke(TimeRemaining);
 

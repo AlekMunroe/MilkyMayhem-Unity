@@ -399,6 +399,25 @@ Create the first playable vertical slice by connecting the exiting mechanics and
 - Redesign backend coding to use Events and InputActions to further decouple mechanics and objects.
 - Add abilities for the player to use.
 
+## 17 November 2026 Reworked Wall Running and Imported Car Traffic Script + Misc
+- Imported Alex's `Car Traffic` Script for the Car obstacle.
+- Added a few additional features to `Car Traffic`
+- Created 5 Car Traffic Routes under Prefab `ObstacleCar`
+- Rewrote Wall Running, now you need to hold a direction to maintain your speed while wall running.
+- Revised Wall Detach, now you need to press either slide button or hold a direction away from the wall at low speeds.
+- Adjusted some variables relating to the Player and Milk Throwing.
+- Adjusted the damage calculation, now it is damaged based instead of health ratio based.
+
+## Testing
+- After some testing, I went to other movement shooters, namely Titanfall 2, to review their movement system and implemented based on their observable mechanics.
+- Regarding health, using health ratio lead to some problems calculating the final speed, so I have moved the calculation to multiply damage instead.
+- `Car Traffic` when imported had the basic mechanics for moving traffic, but lacked some other checks and start up sequence. I have some of the missing features.
+
+## Next Steps
+- Playtest the new Wall Running and Wall Detach feature.
+- Add more Car Traffic Routes.
+- Implement Roadwork Prefab. 
+
 ## Entry Template
 
 ### Date and Feature

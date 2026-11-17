@@ -7,7 +7,7 @@ public class MilkThrowing : MonoBehaviour
 {
     [Header("Throwing")]
     [SerializeField, Min(0f)] private float throwStrength = 12f;
-    [SerializeField, Min(0f)] private float playerVelocityMultiplier = 1f;
+    [SerializeField, Min(0f)] private float playerVelocityMultiplier = 0.5f;
     [SerializeField, Min(0f)] private float throwMaxCooldown = 0.5f;
 
     [Tooltip("The local position in front of the camera where the milk is created")]

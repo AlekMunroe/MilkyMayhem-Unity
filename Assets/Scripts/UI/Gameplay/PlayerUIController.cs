@@ -40,18 +40,6 @@ public class PlayerUIController : MonoBehaviour
         UpdateTimeText(GameManager.Instance.TimeRemaining);
     }
 
-    void Update()
-    {
-        UpdateSprintSlider();
-    }
-
-    private void UpdateSprintSlider()
-    {
-        float sprintSliderValue = playerController.SprintStaminaPercent;
-        
-        sprintSlider.value = sprintSliderValue;
-    }
-
     /// <summary>
     /// Displays the amount of milk deliveries completed
     /// </summary>
