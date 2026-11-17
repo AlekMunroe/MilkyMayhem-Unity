@@ -7,6 +7,8 @@ TagManager:
   - Projectile
   - Checkpoint
   - Car
+  - Junction
+  - TrafficPointOrigin
   layers:
   - Default
   - TransparentFX

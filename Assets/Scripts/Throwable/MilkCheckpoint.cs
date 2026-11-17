@@ -6,7 +6,6 @@ public class MilkCheckpoint : MonoBehaviour
     [SerializeField] private GameObject _dev_visualRepresentation;
 
     [Header("Delivery")]
-    [SerializeField, Min(0f)] private float maximumSafeDeliverySpeed = 10f;
     [SerializeField, Min(0)] private int scoreValue = 100;
     [SerializeField] private Transform landingPoint;
 

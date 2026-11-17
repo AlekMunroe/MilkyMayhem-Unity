@@ -1425,15 +1425,130 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+<<<<<<< Updated upstream:Assets/Scenes/_testing/MainTestScene.unity
     - target: {fileID: 3745421130252953095, guid: 463432ab4904611ec9f2403e26dfcfa2, type: 3}
       propertyPath: perm_healthEffects
       value: 1
       objectReference: {fileID: 0}
+=======
+>>>>>>> Stashed changes:Assets/Scenes/_testing/MovementTest.unity
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 463432ab4904611ec9f2403e26dfcfa2, type: 3}
+--- !u!1 &498199242
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 498199243}
+  - component: {fileID: 498199246}
+  - component: {fileID: 498199245}
+  - component: {fileID: 498199244}
+  m_Layer: 6
+  m_Name: Cube (15)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &498199243
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498199242}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -3.1216, y: 5.2335, z: -36.26}
+  m_LocalScale: {x: 61.275646, y: 11.127017, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1094362537}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &498199244
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498199242}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &498199245
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498199242}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 9015ee40aba19594286afc2dad605c98, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &498199246
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498199242}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &541339431
 GameObject:
   m_ObjectHideFlags: 0
@@ -3210,8 +3325,12 @@ Transform:
   m_Children:
   - {fileID: 322867484}
   - {fileID: 982988517}
+<<<<<<< Updated upstream:Assets/Scenes/_testing/MainTestScene.unity
   - {fileID: 1875528816}
   - {fileID: 1029032640}
+=======
+  - {fileID: 498199243}
+>>>>>>> Stashed changes:Assets/Scenes/_testing/MovementTest.unity
   - {fileID: 1042456576}
   - {fileID: 742566017}
   - {fileID: 839133740}
@@ -3941,9 +4060,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerUIController
   playerController: {fileID: 1631956494}
+<<<<<<< Updated upstream:Assets/Scenes/_testing/MainTestScene.unity
   sprintSlider: {fileID: 722821787}
   scoreText: {fileID: 0}
   timeText: {fileID: 0}
+=======
+  scoreText: {fileID: 0}
+  timeText: {fileID: 0}
+  deliveryInfo: {fileID: 0}
+  timer: {fileID: 0}
+  compass: {fileID: 0}
+>>>>>>> Stashed changes:Assets/Scenes/_testing/MovementTest.unity
   roundResultsText: {fileID: 0}
   roundSummaryText: {fileID: 0}
 --- !u!1 &1541885705
@@ -5670,7 +5797,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   checkpointContainer: {fileID: 42224780}
+<<<<<<< Updated upstream:Assets/Scenes/_testing/MainTestScene.unity
   roundDuration: 120
+=======
+  checkpointRoutePrefabs: []
+  trafficPointContainer: {fileID: 0}
+  trafficPointPrefabs: []
+  roundDuration: 120
+  lowTimeWarningThreshold: 30
+>>>>>>> Stashed changes:Assets/Scenes/_testing/MovementTest.unity
   RoundCompleteUI: {fileID: 0}
 --- !u!1001 &632740211624953067
 PrefabInstance:

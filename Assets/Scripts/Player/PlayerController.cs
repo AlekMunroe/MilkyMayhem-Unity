@@ -30,7 +30,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundAcceleration = 140f;
     [SerializeField] private float groundDeceleration = 190f;
 
-    private Vector2 movementInput;
+    //Movement inputs are now stored here. There is no need to assign a local moveDirection variable in each movement function, as it is covered by vector3MovementInput.
+    private Vector2 directMovementInput;
+    private Vector3 vector3MovementInput;
     private float currentMovementSpeed;
 
     
@@ -71,20 +73,21 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallClingBoost = 20f;
-    [SerializeField] private float wallSlideSpeed = 5f;
+    [SerializeField] private float wallSlideSpeed = 10f;
+    [SerializeField] private float additionalWallSlideSpeed = 2f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
-    [SerializeField] private float wallMomentumHalfLife = 20f;
+    [SerializeField] private float wallMomentumHalfLife = 0.25f;
+    [SerializeField] private float minWallInputMomentum = 1f;
+    private bool isWallClinging;
+    private float wallClingTimer;
+    private float wallReattachTimer;
+    public bool isFastSlide;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
     [SerializeField] private float wallClimbVerticalBoost = 7.5f;
     [SerializeField] private float wallClimbBoost = 5f;
-
-    private bool isWallClinging;
-    private float wallClingTimer;
-    private float wallReattachTimer;
-
     [Header("Wall Jump")]
     [SerializeField] private float wallJumpHeight = 6f;
     [SerializeField] private float wallJumpForce = 10f;
@@ -113,12 +116,26 @@ public class PlayerController : MonoBehaviour
     [Tooltip("This value controls how much damage affects the player's speed.")]
     [SerializeField] private float damageMultiplier = 1f;
     [SerializeField] private float healthRegenDelay = 2.5f;
+<<<<<<< Updated upstream
     [Tooltip("Amount of health regen per tick")]
     [SerializeField] private float healthRegenAmount = 1f;
     private float maxHealth = 100f;
     public float damageTaken;
     public float damageCut; 
     private float healthRegenDelayTimer;
+=======
+    [Tooltip("Amount of health regen")]
+    [SerializeField] private float healthRegenAmount = 2f;
+    [Tooltip("PlayerHealth should always be set to 100. This value will affect how much health impacts the player speed")]
+    [SerializeField] private float maxHealth = 100f;
+    [SerializeField] private float damageTaken;
+    [SerializeField] private float damageCut;
+
+    public float healthRegenDelayTimer;
+    private float healthSpeedMultiplier = 1f;
+
+    public float CurrentHealth => Mathf.Clamp(maxHealth - damageCut - (damageTaken * damageMultiplier), 0f, maxHealth);
+>>>>>>> Stashed changes
 
     [Header("Animations")]
     //Sliding
@@ -129,6 +146,10 @@ public class PlayerController : MonoBehaviour
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
     private float normalControllerHeight;
     private Vector3 normalControllerCenter;
     private bool freezePlayer;
@@ -273,6 +294,73 @@ public class PlayerController : MonoBehaviour
         isGrounded = surfaceAngle <= maxGroundAngle;
     }
 
+<<<<<<< Updated upstream
+=======
+    private void TryMountingObject()
+    {
+        if(!isGrounded || vector3MovementInput.sqrMagnitude < 0.01f)
+        {
+            return;
+        }
+
+        //Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.z);
+
+        //moveDirection.y = 0f;
+        //moveDirection.Normalize();
+
+        Bounds playerBounds = capsuleCollider.bounds;
+
+        Vector3 obstacleCheckOrigin = new Vector3(playerBounds.center.x, playerBounds.min.y + 0.1f, playerBounds.center.z);
+
+        float obstacleCheckDistance = capsuleCollider.radius + mountCheckDistance;
+
+        bool obstacleFound = Physics.Raycast(obstacleCheckOrigin, vector3MovementInput, out RaycastHit obstacleHit, obstacleCheckDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!obstacleFound)
+        {
+            return;
+        }
+
+        float obstacleHeight = obstacleHit.collider.bounds.max.y - playerBounds.min.y;
+
+        if(obstacleHeight <= 0f || obstacleHeight > maxMountHeight)
+        {
+            return;
+        }
+
+        Vector3 topCheckOrigin = obstacleHit.point + (vector3MovementInput * mountForwardDistance) + (Vector3.up * (maxMountHeight + mountClearance));
+
+        bool topFound = Physics.Raycast(topCheckOrigin, Vector3.down, out RaycastHit topHit, maxMountHeight + mountClearance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!topFound)
+        {
+            return;
+        }
+
+        float topAngle = Vector3.Angle(topHit.normal, Vector3.up);
+
+        if(topAngle > maxGroundAngle)
+        {
+            return;
+        }
+
+        float mountHeight = topHit.point.y - playerBounds.min.y;
+
+        if(mountHeight <= 0f || mountHeight > maxMountHeight)
+        {
+            return;
+        }
+
+        Vector3 mountMovement = (Vector3.up * (mountHeight + mountClearance)) + (vector3MovementInput * mountForwardDistance);
+
+        playerRigidbody.MovePosition(playerRigidbody.position + mountMovement);
+
+        Vector3 currentVelocity = playerRigidbody.linearVelocity;
+        currentVelocity.y = Mathf.Max(0f, currentVelocity.y);
+        playerRigidbody.linearVelocity = currentVelocity;
+    }
+
+>>>>>>> Stashed changes
     /// <summary>
     /// Apply a custom gravity to the Rigidbody
     /// </summary>
@@ -303,6 +391,10 @@ public class PlayerController : MonoBehaviour
                 {
                     finalWallSlideSpeed = wallSlideSpeed;
                 }
+                if (isFastSlide)
+                {
+                    finalWallSlideSpeed *= additionalWallSlideSpeed;
+                }
                 currentVelocity.y = -finalWallSlideSpeed;
                 canWallClimb = false;
             }
@@ -328,29 +420,30 @@ public class PlayerController : MonoBehaviour
     /// <param name="keyboard">Keyboard.current</param>
     private void ReadMovementInput(Keyboard keyboard)
     {
-        movementInput = Vector2.zero;
+        directMovementInput = Vector2.zero;
 
         if (keyboard.aKey.isPressed)
         {
-            movementInput.x -= 1f;
+            directMovementInput.x -= 1f;
         }
 
         if (keyboard.dKey.isPressed)
         {
-            movementInput.x += 1f;
+            directMovementInput.x += 1f;
         }
 
         if (keyboard.sKey.isPressed)
         {
-            movementInput.y -= 1f;
+            directMovementInput.y -= 1f;
         }
 
         if (keyboard.wKey.isPressed)
         {
-            movementInput.y += 1f;
+            directMovementInput.y += 1f;
         }
 
-        movementInput = Vector2.ClampMagnitude(movementInput, 1f);
+        vector3MovementInput = (transform.right * directMovementInput.x) + (transform.forward * directMovementInput.y);
+        vector3MovementInput.Normalize();
     }
 
     /// <summary>
@@ -367,9 +460,9 @@ public class PlayerController : MonoBehaviour
 
         Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
 
-        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+        //Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
 
-        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+        //moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
         Vector3 targetHorizontalVelocity;
 
@@ -379,14 +472,14 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            targetHorizontalVelocity = moveDirection * currentMovementSpeed;
+            targetHorizontalVelocity = vector3MovementInput * currentMovementSpeed;
         }
 
         float acceleration;
 
         if (isGrounded)
         {
-            acceleration = moveDirection.sqrMagnitude > 0.01f ? groundAcceleration : groundDeceleration;
+            acceleration = vector3MovementInput.sqrMagnitude > 0.01f ? groundAcceleration : groundDeceleration;
         }
         else
         {
@@ -410,21 +503,31 @@ public class PlayerController : MonoBehaviour
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
 
-        // Gradually reduce momentum when attaching to a wall
-        Vector3 horizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+        Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
 
         Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
 
         // Keep momentum moving along the wall
-        Vector3 velocityAlongWall = Vector3.ProjectOnPlane(horizontalVelocity, horizontalWallNormal);
+        Vector3 velocityAlongWall = Vector3.ProjectOnPlane(currentHorizontalVelocity, horizontalWallNormal);
 
         float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
+<<<<<<< Updated upstream
         
         velocityAlongWall *= momentumMultiplier;
+=======
+
+        if (vector3MovementInput.sqrMagnitude > 0.01f)
+        {
+            velocityAlongWall += vector3MovementInput * currentMovementSpeed * Time.fixedDeltaTime;
+        }
+        else
+        {
+            velocityAlongWall *= momentumMultiplier;
+        }
+>>>>>>> Stashed changes
 
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
-
 
     /// <summary>
     /// Reads WASD inputs and handles movement in the air, such as air strafing.
@@ -442,13 +545,18 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
-        Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, moveDirection);
+        //Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+        Vector3 projectVelocity = Vector3.Project(playerRigidbody.linearVelocity, vector3MovementInput);
 
+<<<<<<< Updated upstream
         bool isVectorAway = Vector3.Dot(moveDirection, projectVelocity) < 0f;
         if(projectVelocity.magnitude < airStrafeSpeed || isVectorAway)
+=======
+        bool isVectorAway = Vector3.Dot(vector3MovementInput, projectVelocity) < 0f;
+        if (projectVelocity.magnitude < airStrafeSpeed || isVectorAway)
+>>>>>>> Stashed changes
         {
-            Vector3 idealVelocity = moveDirection.normalized * currentMovementSpeed;
+            Vector3 idealVelocity = vector3MovementInput * currentMovementSpeed;
             if (!isVectorAway)
             {
                 idealVelocity = Vector3.ClampMagnitude(idealVelocity, airStrafeSpeed - projectVelocity.magnitude);
@@ -644,7 +752,11 @@ public class PlayerController : MonoBehaviour
         {
             storedWallNormal = Vector3.zero;
         }
+<<<<<<< Updated upstream
         
+=======
+
+>>>>>>> Stashed changes
         if (isGrounded)
         {
             isWallClinging = false;
@@ -671,12 +783,20 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
-
         Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
 
-        if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.leftCtrlKey.isPressed)
+        Vector3 horizontalWallMomentum = new Vector3(playerRigidbody.linearVelocity.x, 0f, playerRigidbody.linearVelocity.z);
+
+        //I know its a long statement but it works so idk
+        //Basically it checks if:
+        // The player is moving slow along the wall;
+        // The player is holding a direction that is in the same direction as the wall normal;
+        // The player is holding the slide button (ctrl as default);
+        if (horizontalWallMomentum.sqrMagnitude < minWallInputMomentum && 
+        (Vector3.Dot(vector3MovementInput, horizontalWallNormal) > 0.75f || 
+        Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed))
         {
+            //I tried to move this out to its own function but it will call WallClingClimb(). For now just leave it here, it works and I dont want to break it.
             Vector3 currentVelocity = playerRigidbody.linearVelocity;
             Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;
 
@@ -684,8 +804,8 @@ public class PlayerController : MonoBehaviour
 
             playerRigidbody.linearVelocity = detachVelocity;
 
-            isWallClinging = false;
             canWallClimb = false;
+            isWallClinging = false;
             wallClingTimer = 0f;
             wallReattachTimer = wallReattachDelay;
             return;
@@ -694,7 +814,6 @@ public class PlayerController : MonoBehaviour
         isWallClinging = true;
         wallClingTimer += Time.deltaTime;
     }
-
 
     /// <summary>
     /// Handles the climbing action while the player clings over a wall's height.
@@ -915,8 +1034,12 @@ public class PlayerController : MonoBehaviour
 
         Vector3 direction = playerRigidbody.linearVelocity;
 
+<<<<<<< Updated upstream
         float conversionRatio = Mathf.Abs(maxFallingVelocity * momentumConversionRatio.x/momentumConversionRatio.y);
         Debug.Log(conversionRatio);
+=======
+        float conversionRatio = Mathf.Abs(maxFallingVelocity * momentumConversionRatio.x / momentumConversionRatio.y);
+>>>>>>> Stashed changes
         if (conversionRatio < 1)
         {
             conversionRatio = 1;
@@ -967,7 +1090,7 @@ public class PlayerController : MonoBehaviour
     private void HandleRoundCompleted()
     {
         freezePlayer = true;
-        movementInput = Vector2.zero;
+        vector3MovementInput = Vector2.zero;
 
         playerRigidbody.linearVelocity = Vector3.zero;
         playerRigidbody.angularVelocity = Vector3.zero;

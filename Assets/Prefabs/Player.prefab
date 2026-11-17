@@ -175,13 +175,20 @@ MonoBehaviour:
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
   wallClingBoost: 25
+<<<<<<< Updated upstream:Assets/Prefabs/Player.prefab
   wallStickForce: 10
   wallSlideSpeed: 5
+=======
+  wallSlideSpeed: 10
+  additionalWallSlideSpeed: 2
+>>>>>>> Stashed changes:Assets/Prefabs/Gameplay/Player.prefab
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
-  wallMomentumHalfLife: 20
+  wallMomentumHalfLife: 0.25
+  minWallInputMomentum: 1
+  isFastSlide: 0
   canWallClimb: 0
-  wallClimbVerticalBoost: 7.5
+  wallClimbVerticalBoost: 10
   wallClimbBoost: 5
   wallJumpHeight: 6
   wallJumpForce: 10

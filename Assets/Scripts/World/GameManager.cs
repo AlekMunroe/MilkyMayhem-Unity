@@ -6,8 +6,21 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Container")]
+    [Header("Checkpoint")]
     [SerializeField] private GameObject checkpointContainer;
+<<<<<<< Updated upstream
+=======
+    [SerializeField] private CheckpointRoute[] checkpointRoutePrefabs;
+
+    //Temporary variables for traffic point generation. Most likely will make a new script to handle traffic point generation in the future
+    [Header("Traffic")]
+    [SerializeField] private GameObject trafficPointContainer;
+    [SerializeField] private GameObject[] trafficPointPrefabs;
+
+    private CheckpointRoute activeCheckpointRoute;
+
+    public int RouteNumber { get; private set; }
+>>>>>>> Stashed changes
 
     private readonly List<MilkCheckpoint> checkpointList = new List<MilkCheckpoint>();
     private readonly HashSet<MilkCheckpoint> clearedCheckpoints = new HashSet<MilkCheckpoint>();
