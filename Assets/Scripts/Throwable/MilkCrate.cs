@@ -29,6 +29,7 @@ public class MilkCrate : MonoBehaviour
 
     private Rigidbody projectileRigidbody;
     private int remainingBounces;
+    private bool canBounce = true;
     private float nextAllowedBounceTime;
 
     [Header("Debug")]
@@ -130,6 +131,18 @@ public class MilkCrate : MonoBehaviour
         UpdateLifetime();
     }
 
+    private void LateUpdate()
+    {
+        if(!IsBroken || brokenObject == null)
+        {
+            return;
+        }
+
+        Transform brokenTransform = brokenObject.transform;
+
+        brokenTransform.rotation = Quaternion.FromToRotation(brokenTransform.up, Vector3.up) * brokenTransform.rotation;
+    }
+
     /// <summary>
     /// Add a controlled bounce when the crate hits a surface
     /// </summary>
@@ -148,6 +161,12 @@ public class MilkCrate : MonoBehaviour
         if(collision.relativeVelocity.magnitude >= breakingImpactSpeed)
         {
             MarkBroken();
+            return;
+        }
+
+        // Placed crates dont break or bounce
+        if (!canBounce)
+        {
             return;
         }
 
@@ -294,10 +313,11 @@ public class MilkCrate : MonoBehaviour
     /// </summary>
     public void DisableBouncing()
     {
-        remainingBounces = 0;
+        canBounce = false;
 
         if(projectileRigidbody != null)
         {
+            projectileRigidbody.linearVelocity = Vector3.zero;
             projectileRigidbody.angularVelocity = Vector3.zero;
         }
     }

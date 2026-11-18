@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2186218677990643000}
   - component: {fileID: 4371805885847548071}
   - component: {fileID: 8215855570440799089}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Collider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -121,7 +121,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 50579081468401025}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Colliders
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -207,6 +207,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: c698f6c67c845044993390cc1e08e5b2, type: 3}
       propertyPath: m_Name
       value: Street Bin
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c698f6c67c845044993390cc1e08e5b2, type: 3}
+      propertyPath: m_Layer
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: c698f6c67c845044993390cc1e08e5b2, type: 3}
       propertyPath: m_StaticEditorFlags

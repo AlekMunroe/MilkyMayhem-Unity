@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3547883225903876598}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Colliders
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44,7 +44,7 @@ GameObject:
   - component: {fileID: 8073009315598590630}
   - component: {fileID: 5786692987353034398}
   - component: {fileID: 7486049998846901703}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Collider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -207,6 +207,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 0f89423b1333cb445a3344c92d27dd2c, type: 3}
       propertyPath: m_Name
       value: Firehydrant
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 0f89423b1333cb445a3344c92d27dd2c, type: 3}
+      propertyPath: m_Layer
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0f89423b1333cb445a3344c92d27dd2c, type: 3}
       propertyPath: m_StaticEditorFlags

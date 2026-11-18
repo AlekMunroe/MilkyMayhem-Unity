@@ -70,10 +70,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallClingBoost = 20f;
-    [SerializeField] private float wallSlideSpeed = 5f;
+    [SerializeField] private float wallSlideSpeed = 10f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
-    [SerializeField] private float wallMomentumHalfLife = 20f;
+    [SerializeField] private float wallMomentumHalfLife = 1.5f;
+    [SerializeField] private float minWallInputMomentum = 1f;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
@@ -473,18 +474,39 @@ public class PlayerController : MonoBehaviour
         }
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
-
-        // Gradually reduce momentum when attaching to a wall
-        Vector3 horizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+        Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
 
         Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
 
         // Keep momentum moving along the wall
-        Vector3 velocityAlongWall = Vector3.ProjectOnPlane(horizontalVelocity, horizontalWallNormal);
+        Vector3 velocityAlongWall = Vector3.ProjectOnPlane(currentHorizontalVelocity, horizontalWallNormal);
 
         float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
 
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+
+        // Reduce the existing momentum
         velocityAlongWall *= momentumMultiplier;
+
+        // Dont allow input to increase past the current speed.
+        float maximumAllowedWallSpeed = Mathf.Max(currentMovementSpeed, velocityAlongWall.magnitude);
+
+        // Holding a different direction will maintain some momentum
+        if(moveDirection.sqrMagnitude > 0.01f)
+        {
+            Vector3 inputAlongWall = Vector3.ProjectOnPlane(moveDirection, horizontalWallNormal);
+
+            if(inputAlongWall.sqrMagnitude > 0.01f)
+            {
+                inputAlongWall.Normalize();
+
+                velocityAlongWall += inputAlongWall * currentMovementSpeed * Time.fixedDeltaTime;
+
+                velocityAlongWall = Vector3.ClampMagnitude(velocityAlongWall, maximumAllowedWallSpeed);
+            }
+        }
 
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
@@ -820,9 +842,17 @@ public class PlayerController : MonoBehaviour
 
         Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
 
-        Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
-        if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.leftCtrlKey.isPressed)
+        Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+        Vector3 horizontalWallMomentum = new Vector3(playerRigidbody.linearVelocity.x, 0f, playerRigidbody.linearVelocity.z);
+
+        bool slidePressed = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+        bool movingAwayFromWall = moveDirection.sqrMagnitude > 0.01f && Vector3.Dot(moveDirection, horizontalWallNormal) > 0.75f;
+        bool movingBelowMinimumWallSpeed = horizontalWallMomentum.magnitude < minWallInputMomentum;
+        bool shouldDetach = slidePressed || (movingBelowMinimumWallSpeed && movingAwayFromWall);
+
+        if (shouldDetach)
         {
             Vector3 currentVelocity = playerRigidbody.linearVelocity;
             Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;

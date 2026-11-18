@@ -174,10 +174,11 @@ MonoBehaviour:
   wallCheckDistance: 0.25
   maxWallClingTime: 0.5
   wallClingBoost: 25
-  wallSlideSpeed: 3
+  wallSlideSpeed: 10
   wallJumpForwardForce: 8
   wallDetachSpeed: 2
-  wallMomentumHalfLife: 20
+  wallMomentumHalfLife: 1.5
+  minWallInputMomentum: 1
   canWallClimb: 0
   wallClimbVerticalBoost: 7.5
   wallClimbBoost: 5
@@ -814,7 +815,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MilkThrowing
   throwStrength: 12
-  playerVelocityMultiplier: 1
+  playerVelocityMultiplier: 0.75
   throwMaxCooldown: 0.5
   projectileSpawnPointOffset: {x: 0, y: -0.15, z: 1}
   randomTorqueStrength: 1
