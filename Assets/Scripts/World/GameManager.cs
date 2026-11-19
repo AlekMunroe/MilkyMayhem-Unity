@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     public event Action RoundCompleted;
 
     public bool IsRoundRunning => isRoundRunning;
+    public bool HasRoundEnded { get; private set; }
     public event Action RoundStarted;
 
     [Header("Round Timer")]
@@ -80,6 +81,8 @@ public class GameManager : MonoBehaviour
         TimeRemaining = roundDuration;
         isRoundRunning = false;
         TimeRemainingChanged?.Invoke(TimeRemaining);
+
+        HasRoundEnded = false;
     }
 
     void Update()
@@ -181,6 +184,7 @@ public class GameManager : MonoBehaviour
     private void CompleteRound()
     {
         isRoundRunning = false;
+        HasRoundEnded = true;
 
         RoundCompleted?.Invoke();
 
@@ -221,6 +225,7 @@ public class GameManager : MonoBehaviour
         TimeRemaining = roundDuration;
         lowTimeWarningTriggered = false;
         lastCountdownSecond = -1;
+        HasRoundEnded = false;
         isRoundRunning = true;
 
         RoundStarted?.Invoke();

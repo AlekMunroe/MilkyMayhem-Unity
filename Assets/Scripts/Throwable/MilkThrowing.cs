@@ -7,7 +7,7 @@ public class MilkThrowing : MonoBehaviour
 {
     [Header("Throwing")]
     [SerializeField, Min(0f)] private float throwStrength = 12f;
-    [SerializeField, Min(0f)] private float playerVelocityMultiplier = 1f;
+    [SerializeField, Min(0f)] private float playerVelocityMultiplier = 0.75f;
     [SerializeField, Min(0f)] private float throwMaxCooldown = 0.5f;
 
     [Tooltip("The local position in front of the camera where the milk is created")]
@@ -151,11 +151,14 @@ public class MilkThrowing : MonoBehaviour
 
         IgnorePlayerCollisions(spawnedProjectile);
 
-        // Carry some players movement into the throw
-        spawnedProjectile.linearVelocity = playerRigidbody.linearVelocity * playerVelocityMultiplier;
+        // Get the players movement
+        Vector3 inheritedPlayerVelocity = playerRigidbody.linearVelocity * playerVelocityMultiplier;
 
-        // Apply a single throw impulse
-        spawnedProjectile.AddForce(transform.forward * throwStrength, ForceMode.Impulse);
+        // Get the cameras direction
+        Vector3 throwVelocity = transform.forward.normalized * throwStrength;
+
+        // Give the crate one starting velocity
+        spawnedProjectile.linearVelocity = inheritedPlayerVelocity + throwVelocity;
 
         // Add random rotation
         Vector3 randomTorque = Random.insideUnitSphere * randomTorqueStrength;

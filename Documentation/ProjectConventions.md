@@ -24,6 +24,13 @@ Before sending a model to a developer:
 8. Test the exported model in Unity `6000.3.19f1`.
 9. Make sure there are no missing meshes, pink materials or Console errors before sending it.
 
+Looking at the entire environment models from a long distance should include LOD variants:
+- `LOD0`: The original full detail model
+- `LOD1`: a medium distance model with a lower polygon count
+- `LOD2`: A simple long distance model or silhouette
+
+Every LOD version must use the same scae, position, rotation and pivot so it can be added to Unity's `LODGroup`.
+
 ### Submitting Model Files
 
 Send models to a developer as a ZIP file which is separate from the Unity project. Do not place unreviewed models directly into the project's `Assets` folder or commit them to GitHub. This allows the developer to check and organise the files before adding them to the main project.
@@ -136,8 +143,6 @@ Milk throwing, crate and checkpoint scripts belong in `Assets/Scripts/Throwable`
 
 The old CharacterController player and the empty `EventHandler` and the replaced `CheckpointArrow` are currently stored in `_Depreciated` folders. They are not part of the current game.
 
-Sprinting is depreicated. Its code is still part of the `PlayerController` but `Perm Can Sprint` is disabled.
-
 ## Naming
 
 - Classes and filenames use `PascalCase`, for example `PlayerController.cs`.
@@ -176,6 +181,16 @@ Do not use negative scale on the objects which require BoxColliders. Unity force
 
 After importing or changing the environment, test walking, slopes, jumping next to walls, wall clinging, wall detachment and wall jumping.
 
+Use a simple child BoxCollider for all objects where required. Multiple BoxCollider objects can be added for irregular shapes. Do not use one complex MeshCollider for the entire city environment.
+
+The collider must inherit the same scale as the mesh. If the mesh is scaled through a child object, place the colliders under that scaled object.
+
+Small objects used for mounting must use the `Environment` layer as normal.
+
+Objects in the environment which will never move should be marked as static. This includes objects such as buildings, roads, pavements and menches. After changing the layout of the environment, make sure to bake the occlusion and test it with the occlusion culling visualisation.
+
+Dont set moving objects such as the player and milk crates to static.
+
 ## Scenes and Prefabs
 
 - Avoid having two people edit the same `.unity` scene at the same time.
@@ -184,6 +199,17 @@ After importing or changing the environment, test walking, slopes, jumping next 
 - Keep unfinished and experimental objects inside test scenes.
 - Do not rename layers, tags or serialized script fields without telling the group because this can break saved references.
 - Check that the correct controllers and managers are enabled before testing a scene.
+
+## Audio
+
+Short sound effects can be used normally with Decompress on Load or Compressed in Memory depending on their size and their use.
+
+Long background music should be set as:
+- Load in background: Enabled
+- Load type: Streaming
+- Compression format: Vorbis
+
+These settings will stop longer audio files from causing freezes when they are loaded into the game.
 
 ## Git Workflow
 

@@ -13,12 +13,12 @@ GameObject:
   - component: {fileID: 4181967684648728966}
   - component: {fileID: 855355687766224117}
   - component: {fileID: 1560094901922116028}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Roadwork
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &4332627058169096139
 Transform:
@@ -125,3 +125,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e525ed1a3ce39c97882c54d686fe604c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadWorkDamage
+  baseDamage: 30

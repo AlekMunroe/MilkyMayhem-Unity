@@ -30,14 +30,19 @@ public class WorldController : MonoBehaviour
 
         Instance = this;
 
+        isGamePaused = false;
+
         pauseWhenUnfocused = GameSettingsController.PauseWhenUnfocused;
     }
 
     void Start()
     {
         cameraController = PlayerController.Instance.GetCameraController();
-        ResetGameSpeed();
 
+        isGamePaused = false;
+        pauseMenuUI.SetActive(false);
+
+        ResetGameSpeed();
         LockMouse();
     }
 
@@ -64,6 +69,11 @@ public class WorldController : MonoBehaviour
     /// </summary>
     public void UpdatePause()
     {
+        if(!isGamePaused && GameManager.Instance.HasRoundEnded)
+        {
+            return;
+        }
+
         if (isGamePaused)
         {
             isGamePaused = false;

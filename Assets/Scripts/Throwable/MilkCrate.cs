@@ -18,6 +18,7 @@ public class MilkCrate : MonoBehaviour
 
     [Header("Collision")]
     [SerializeField] private LayerMask bounceSurfaceMask = ~0;
+    [SerializeField, Min(0f)] private float breakingImpactSpeed = 35f;
 
     [Header("Feedback")]
     [SerializeField] private GameObject defaultObject;
@@ -28,6 +29,7 @@ public class MilkCrate : MonoBehaviour
 
     private Rigidbody projectileRigidbody;
     private int remainingBounces;
+    private bool canBounce = true;
     private float nextAllowedBounceTime;
 
     [Header("Debug")]
@@ -103,6 +105,8 @@ public class MilkCrate : MonoBehaviour
             return;
         }
 
+        defaultObject.SetActive(true);
+        brokenObject.SetActive(false);
         remainingBounces = maximumBounces;
     }
 
@@ -127,6 +131,18 @@ public class MilkCrate : MonoBehaviour
         UpdateLifetime();
     }
 
+    private void LateUpdate()
+    {
+        if(!IsBroken || brokenObject == null)
+        {
+            return;
+        }
+
+        Transform brokenTransform = brokenObject.transform;
+
+        brokenTransform.rotation = Quaternion.FromToRotation(brokenTransform.up, Vector3.up) * brokenTransform.rotation;
+    }
+
     /// <summary>
     /// Add a controlled bounce when the crate hits a surface
     /// </summary>
@@ -136,13 +152,20 @@ public class MilkCrate : MonoBehaviour
         GameObject collisionRoot = collision.transform.root.gameObject;
 
         // Stop from collising with the player or other projectiles
-        if(collisionRoot.CompareTag("Player") || collisionRoot.CompareTag("Projectile"))
+        if(collisionRoot.CompareTag("Player") || collisionRoot.CompareTag("Projectile") || collisionRoot.CompareTag("Checkpoint"))
         {
             return;
         }
 
-        // Checkpoints handle through MilkCheckpoint
-        if (collisionRoot.CompareTag("Checkpoint"))
+        // Break if speed is greater than the impact speed
+        if(collision.relativeVelocity.magnitude >= breakingImpactSpeed)
+        {
+            MarkBroken();
+            return;
+        }
+
+        // Placed crates dont break or bounce
+        if (!canBounce)
         {
             return;
         }
@@ -159,17 +182,18 @@ public class MilkCrate : MonoBehaviour
             return;
         }
 
-        // If no bounces are left, use normal Rigidbody physics to stop the crate
-        if(remainingBounces <= 0)
+        Vector3 impactVelocity = velocityBeforePhysicsUpdate;
+
+        // Collision too gentle
+        if(impactVelocity.magnitude < minimumBounceSpeed)
         {
             return;
         }
 
-        Vector3 impactVelocity = velocityBeforePhysicsUpdate;
-
-        if (impactVelocity.magnitude < minimumBounceSpeed)
+        // The crate already used all its bounces
+        if(remainingBounces <= 0)
         {
-            remainingBounces = 0;
+            MarkBroken();
             return;
         }
 
@@ -201,7 +225,7 @@ public class MilkCrate : MonoBehaviour
 
     private void UpdateLifetime()
     {
-        if (IsBroken)
+        if (IsBroken || IsLanded)
         {
             return;
         }
@@ -216,12 +240,6 @@ public class MilkCrate : MonoBehaviour
         if (currentLifetime <= 0f)
         {
             Destroy(gameObject);
-            return;
-        }
-
-        // Delivered crates to stay visible when their lifetime expires
-        if (IsLanded)
-        {
             return;
         }
 
@@ -295,10 +313,11 @@ public class MilkCrate : MonoBehaviour
     /// </summary>
     public void DisableBouncing()
     {
-        remainingBounces = 0;
+        canBounce = false;
 
         if(projectileRigidbody != null)
         {
+            projectileRigidbody.linearVelocity = Vector3.zero;
             projectileRigidbody.angularVelocity = Vector3.zero;
         }
     }

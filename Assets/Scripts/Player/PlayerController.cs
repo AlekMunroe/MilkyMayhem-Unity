@@ -60,15 +60,21 @@ public class PlayerController : MonoBehaviour
 
     private bool jumpReleased;
 
+    [Header("Mounting")]
+    [SerializeField] private float maxMountHeight = 1.8f;
+    [SerializeField] private float mountCheckDistance = 0.25f;
+    [SerializeField] private float mountForwardDistance = 0.2f;
+    [SerializeField] private float mountClearance = 0.05f;
+
     [Header("Wall Movement")]
     [SerializeField] private float wallCheckDistance = 0.25f;
     [SerializeField] private float maxWallClingTime = 0.5f;
     [SerializeField] private float wallClingBoost = 20f;
-    //[SerializeField] private float wallStickForce = 10f;
-    [SerializeField] private float wallSlideSpeed = 5f;
+    [SerializeField] private float wallSlideSpeed = 10f;
     [SerializeField] private float wallJumpForwardForce = 8f;
     [SerializeField] private float wallDetachSpeed = 2f;
-    [SerializeField] private float wallMomentumHalfLife = 20f;
+    [SerializeField] private float wallMomentumHalfLife = 1.5f;
+    [SerializeField] private float minWallInputMomentum = 1f;
 
     [Header("Wall Climbing")]
     [SerializeField] private bool canWallClimb = false;
@@ -107,13 +113,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float damageMultiplier = 1f;
     [SerializeField] private float healthRegenDelay = 2.5f;
     [Tooltip("Amount of health refen per tick")]
-    [SerializeField] private float healthRegenAmount = 1f;
+    [SerializeField] private float healthRegenAmount = 2f;
     [Tooltip("PlayerHealth should always be set to 100. This value will affect how much health impacts the player speed")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float damageTaken;
     [SerializeField] private float damageCut;
 
-    private float healthRegenDelayTimer;
+    public float healthRegenDelayTimer;
     private float healthSpeedMultiplier = 1f;
 
     public float CurrentHealth => Mathf.Clamp(maxHealth - damageCut - (damageTaken * damageMultiplier), 0f, maxHealth);
@@ -128,6 +134,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody playerRigidbody;
     private CapsuleCollider capsuleCollider;
     private bool isGrounded;
+    public bool IsGrounded => isGrounded;
 
     private Vector3 storedWallMomentum;
     private Vector3 maxWallMomentum;
@@ -209,6 +216,7 @@ public class PlayerController : MonoBehaviour
         }
 
         UpdateGroundCheck();
+        TryMountingObject();
         UpdateWallState();
         HandleJumping();
         UpdateGravity();
@@ -257,6 +265,70 @@ public class PlayerController : MonoBehaviour
         float surfaceAngle = Vector3.Angle(groundHIt.normal, Vector3.up);
 
         isGrounded = surfaceAngle <= maxGroundAngle;
+    }
+
+    private void TryMountingObject()
+    {
+        if(!isGrounded || movementInput.sqrMagnitude < 0.01f)
+        {
+            return;
+        }
+
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+
+        moveDirection.y = 0f;
+        moveDirection.Normalize();
+
+        Bounds playerBounds = capsuleCollider.bounds;
+
+        Vector3 obstacleCheckOrigin = new Vector3(playerBounds.center.x, playerBounds.min.y + 0.1f, playerBounds.center.z);
+
+        float obstacleCheckDistance = capsuleCollider.radius + mountCheckDistance;
+
+        bool obstacleFound = Physics.Raycast(obstacleCheckOrigin, moveDirection, out RaycastHit obstacleHit, obstacleCheckDistance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!obstacleFound)
+        {
+            return;
+        }
+
+        float obstacleHeight = obstacleHit.collider.bounds.max.y - playerBounds.min.y;
+
+        if(obstacleHeight <= 0f || obstacleHeight > maxMountHeight)
+        {
+            return;
+        }
+
+        Vector3 topCheckOrigin = obstacleHit.point + (moveDirection * mountForwardDistance) + (Vector3.up * (maxMountHeight + mountClearance));
+
+        bool topFound = Physics.Raycast(topCheckOrigin, Vector3.down, out RaycastHit topHit, maxMountHeight + mountClearance, environmentMask, QueryTriggerInteraction.Ignore);
+
+        if (!topFound)
+        {
+            return;
+        }
+
+        float topAngle = Vector3.Angle(topHit.normal, Vector3.up);
+
+        if(topAngle > maxGroundAngle)
+        {
+            return;
+        }
+
+        float mountHeight = topHit.point.y - playerBounds.min.y;
+
+        if(mountHeight <= 0f || mountHeight > maxMountHeight)
+        {
+            return;
+        }
+
+        Vector3 mountMovement = (Vector3.up * (mountHeight + mountClearance)) + (moveDirection * mountForwardDistance);
+
+        playerRigidbody.MovePosition(playerRigidbody.position + mountMovement);
+
+        Vector3 currentVelocity = playerRigidbody.linearVelocity;
+        currentVelocity.y = Mathf.Max(0f, currentVelocity.y);
+        playerRigidbody.linearVelocity = currentVelocity;
     }
 
     /// <summary>
@@ -402,20 +474,39 @@ public class PlayerController : MonoBehaviour
         }
 
         Vector3 currentVelocity = playerRigidbody.linearVelocity;
-
-        // Gradually reduce momentum when attaching to a wall
-        Vector3 horizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+        Vector3 currentHorizontalVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
 
         Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
 
         // Keep momentum moving along the wall
-        Vector3 velocityAlongWall = Vector3.ProjectOnPlane(horizontalVelocity, horizontalWallNormal);
+        Vector3 velocityAlongWall = Vector3.ProjectOnPlane(currentHorizontalVelocity, horizontalWallNormal);
 
         float momentumMultiplier = Mathf.Pow(0.5f, Time.fixedDeltaTime / wallMomentumHalfLife);
 
+        Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
+
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+
+        // Reduce the existing momentum
         velocityAlongWall *= momentumMultiplier;
 
-        //velocityAlongWall += wallNormal * -wallStickForce;
+        // Dont allow input to increase past the current speed.
+        float maximumAllowedWallSpeed = Mathf.Max(currentMovementSpeed, velocityAlongWall.magnitude);
+
+        // Holding a different direction will maintain some momentum
+        if(moveDirection.sqrMagnitude > 0.01f)
+        {
+            Vector3 inputAlongWall = Vector3.ProjectOnPlane(moveDirection, horizontalWallNormal);
+
+            if(inputAlongWall.sqrMagnitude > 0.01f)
+            {
+                inputAlongWall.Normalize();
+
+                velocityAlongWall += inputAlongWall * currentMovementSpeed * Time.fixedDeltaTime;
+
+                velocityAlongWall = Vector3.ClampMagnitude(velocityAlongWall, maximumAllowedWallSpeed);
+            }
+        }
 
         playerRigidbody.linearVelocity = new Vector3(velocityAlongWall.x, currentVelocity.y, velocityAlongWall.z);
     }
@@ -569,6 +660,39 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
+    /// Resets the players state and velocity then move the player to a location
+    /// </summary>
+    /// <param name="respawnPosition">The player's new position</param>
+    /// <param name="respawnRotation">The player's new rotation</param>
+    public void RespawnAt(Vector3 respawnPosition, Quaternion respawnRotation)
+    {
+        // Reset all states
+        if (isSliding)
+        {
+            StopSliding();
+        }
+
+        isGrounded = false;
+        isWallClinging = false;
+        canWallClimb = false;
+        wallClingTimer = 0f;
+        wallReattachTimer = wallReattachDelay;
+        coyoteTimer = 0f;
+        jumpBufferTimer = 0f;
+        jumpReleased = true;
+        movementInput = Vector2.zero;
+        storedWallMomentum = Vector3.zero;
+        playerRigidbody.linearVelocity = Vector3.zero;
+        playerRigidbody.angularVelocity = Vector3.zero;
+
+        // Move the player immediately
+        playerRigidbody.position = respawnPosition;
+        playerRigidbody.rotation = respawnRotation;
+
+        Physics.SyncTransforms();
+    }
+
+    /// <summary>
     /// handles all jumps
     /// </summary>
     private void HandleJumping()
@@ -718,9 +842,17 @@ public class PlayerController : MonoBehaviour
 
         Vector3 moveDirection = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
 
-        Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
-        if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.leftCtrlKey.isPressed)
+        Vector3 horizontalWallNormal = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
+        Vector3 horizontalWallMomentum = new Vector3(playerRigidbody.linearVelocity.x, 0f, playerRigidbody.linearVelocity.z);
+
+        bool slidePressed = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+        bool movingAwayFromWall = moveDirection.sqrMagnitude > 0.01f && Vector3.Dot(moveDirection, horizontalWallNormal) > 0.75f;
+        bool movingBelowMinimumWallSpeed = horizontalWallMomentum.magnitude < minWallInputMomentum;
+        bool shouldDetach = slidePressed || (movingBelowMinimumWallSpeed && movingAwayFromWall);
+
+        if (shouldDetach)
         {
             Vector3 currentVelocity = playerRigidbody.linearVelocity;
             Vector3 detachVelocity = horizontalWallNormal * wallDetachSpeed;
@@ -805,6 +937,14 @@ public class PlayerController : MonoBehaviour
         bool surfaceFound = Physics.Raycast(rayOrigin, rayDirection, out wallHit, rayDistance, environmentMask, QueryTriggerInteraction.Ignore);
 
         if (!surfaceFound)
+        {
+            return false;
+        }
+
+        float objectHeight = wallHit.collider.bounds.max.y - capsuleCollider.bounds.min.y;
+
+        // Mount small objects, do not treat them as walls
+        if(objectHeight > 0f && objectHeight <= maxMountHeight)
         {
             return false;
         }
