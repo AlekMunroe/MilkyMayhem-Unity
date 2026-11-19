@@ -68,7 +68,7 @@ public class MilkCheckpoint : MonoBehaviour
             return;
         }
 
-        bool deliveryFailed = milkCrate.IsBroken || milkCrate.CurrentSpeed > maximumSafeDeliverySpeed;
+        bool deliveryFailed = milkCrate.IsBroken;
 
         if (deliveryFailed)
         {

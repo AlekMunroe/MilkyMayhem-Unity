@@ -111,10 +111,10 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.64841074, y: 0.72798085, z: 1.3296152}
+  m_Center: {x: -0.00000009934108, y: -0.13600968, z: -0.008674085}
 --- !u!114 &2016097235553404159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,7 +129,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CarDamage
   baseDamage: 25
   damageMultiplier: 1
-  minCollisionSpeed: 5
+  minCollisionSpeed: 0
   collisionKnockbackForce: 10
   collisionVelocityThreshold: 20
   frontCollisionThreshold: 0.5
@@ -148,7 +148,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3924444862098480054
 Transform:
   m_ObjectHideFlags: 0
